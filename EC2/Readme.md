@@ -29,8 +29,14 @@ terraform apply
 
 ## Step 3: SSH
 
-Use terraform output to grap the ip, use tr to strip the quotes from the output.
+Use `terraform output` to grap the ip, use `tr` to strip the quotes from the output.
 
 ```sh
 ssh -i ssh_key/key ubuntu@$(terraform output public_ip | tr -d '"')
+```
+
+Or simply:
+
+```sh
+ssh -i ssh_key/key ubuntu@$<ip>
 ```
