@@ -1,3 +1,7 @@
+ArtifactGenerator/*.txt
+ArtifactGenerator/*.ini
+ArtifactGenerator/*.zip
+**/.venv
 **/ssh_key/*
 **/.terraform/*
 *.tfstate
