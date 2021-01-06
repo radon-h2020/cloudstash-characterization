@@ -1,6 +1,5 @@
 **/ssh_key/*
 **/.terraform/*
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 key
