@@ -6,26 +6,31 @@ This directory contains sample code to create EC2 instance in Stockholm (eu-nort
 
 When prompted for filename/path enter: key
 
-```
-ssh-keygen -t rsa 
+```sh
+mkdir ssh_key
+ssh-keygen -t rsa -b 4096 -f ssh_key/key
 ```
 
-```
-chmod 400 key*
+Set stricter file permissions on keys
+```sh
+chmod 400 ssh_key/key*
 ```
 
 ## Step 2: Terraform
 
-```
+Make sure that the remote state s3 bucket has been created before applying this module, see `cloudstash-characterization/RemoteStateBucket`.
+
+```sh
 terraform init
+terraform validate
 terraform plan
 terraform apply
 ```
 
-## Step 3: Provision
+## Step 3: SSH
 
-Currently done with ssh. See ip in output after terraform apply
+Use terraform output to grap the ip, use tr to strip the quotes from the output.
 
-```
-ssh -i key ubuntu@[ip]
+```sh
+ssh -i ssh_key/key ubuntu@$(terraform output public_ip | tr -d '"')
 ```
