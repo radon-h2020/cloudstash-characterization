@@ -6,8 +6,8 @@ ENV PATH=$PATH:/home/node/.npm-global/bin
 USER node
 RUN npm i -g artillery
 
-COPY script.yml .
+COPY users.csv .
+COPY *.yml ./
 
 ENTRYPOINT [ "artillery" ]
-
-CMD ["run", "script.yml"]
+CMD [ "run", "script.yml" ]
