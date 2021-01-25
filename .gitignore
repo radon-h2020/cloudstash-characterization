@@ -3,7 +3,9 @@ ArtifactGenerator/*.ini
 ArtifactGenerator/*.zip
 **/.venv
 **/ssh_key/*
+**/secrets/*
 **/.terraform/*
 *.tfstate
 *.tfstate.backup
 key
+*.tfvars

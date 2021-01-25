@@ -41,6 +41,17 @@ resource "null_resource" "orchestrator-provisioner" {
     host        = aws_eip.ubuntu.public_ip
   }
 
+  # put deployment key
+  provisioner "file" {
+    source = var.cloudstash_deployment_key
+    destination = "/home/ubuntu/.ssh/id_rsa"
+  }
+  # put aws credentials
+  provisioner "file" {
+    source = "secrets/.aws"
+    destination = "/home/ubuntu/.aws"
+  }
+
 
   # execute commands on the server
   provisioner "remote-exec" {
@@ -53,7 +64,7 @@ resource "null_resource" "orchestrator-provisioner" {
       "sudo apt-get upgrade -qq",
 
       # will install both docker and docker-compose
-      "sudo apt-get install -qq moreutils docker-compose",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq moreutils docker-compose awscli",
       # enable docker deamon
       "sudo systemctl enable --now docker",
       # add user to docker group
@@ -61,7 +72,15 @@ resource "null_resource" "orchestrator-provisioner" {
 
       # TODO add docker image(s)
       # "sudo docker pull -q ..."
-      "git clone https://github.com/radon-h2020/cloudstash-characterization"
+
+      # pull the characterization repository
+      "git clone https://github.com/radon-h2020/cloudstash-characterization",
+
+      # pull cloudstash repository from eficode git using deployment key
+      "chown -R ubuntu:ubuntu /home/ubuntu/.aws",
+      "chmod 600 /home/ubuntu/.ssh/id_rsa",
+      "ssh-keyscan ssh-keyscan -H ${var.cloudstash_git_host} >> /home/ubuntu/.ssh/known_hosts",
+      "git clone ${var.cloudstash_repository}",
     ]
   }
 }
