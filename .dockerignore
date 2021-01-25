@@ -1,0 +1,5 @@
+**/.git/*
+Database
+RemoteStateBucket
+EC2
+Dockerfile

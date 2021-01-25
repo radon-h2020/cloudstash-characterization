@@ -22,7 +22,7 @@ terraform {
   # as variables are created after terraform initialization
   # therefore YOU MUST ENSURE THAT THEY ARE CORRECT!
   backend "s3" {
-    bucket = "cloudstash-characterization-tfstate"
+    bucket = "cloudstash-characterization-terraform-state"
     # key is name of the terraform state file
     key = "<project_name>.tfstate"
     region = "eu-north-1"
@@ -31,5 +31,7 @@ terraform {
 ```
 
 Then `$ terraform init` should report the s3 backend was successfully configured.
+
+If you get the `NoSuckBucket` error, use the `--reconfigure` flag with init to initialize terraform from a clean state.
 
 This configuration assumes that you are logged in to the aws-cli with the same account for both the bucket and the project.
