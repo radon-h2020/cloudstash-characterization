@@ -3,21 +3,20 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "cloudstash-characterization-tfstate"
+  bucket = "cloudstash-characterization-terraform-state"
   acl = "private"
+
+  # allow delete bucket with things in it
+  force_destroy = true
+
   lifecycle {
     prevent_destroy = true
   }
 }
 
-# resource "aws_dynamodb_table" "terraform_state_lock" {
-  # name           = "app-state"
-  # read_capacity  = 1
-  # write_capacity = 1
-  # hash_key       = "LockID"
+resource "aws_s3_bucket_public_access_block" "no_public_access_to_bucket" {
+  bucket = aws_s3_bucket.terraform_state.id
 
-  # attribute {
-    # name = "LockID"
-    # type = "S"
-  # }
-# }
+  block_public_acls   = true
+  block_public_policy = true
+}
