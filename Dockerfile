@@ -1,12 +1,14 @@
-FROM node:lts
+FROM alpine:3
 
 RUN \
-    apt-get update && \
-    apt-get install -y python3 python3-dev python3-pip && \
-    apt-get clean
+    apk add --no-cache bash nodejs npm python3 py3-pip && \
+    npm install -g serverless serverless-python-requirements && \
+    addgroup -S alpine && adduser -S alpine -G alpine
 
-COPY . /home/node
+USER alpine
 
-WORKDIR /home/node
+COPY . /home/alpine/cloudstash-characterization
 
-USER node
+WORKDIR /home/alpine/cloudstash-characterization
+
+CMD ["bash"]
