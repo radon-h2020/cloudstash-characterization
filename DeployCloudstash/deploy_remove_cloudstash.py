@@ -10,12 +10,21 @@ from config import CLOUDSTASH_CODE_PATH
 def deploy_cloudstash(stage: str) -> (str, bool):
     retries = 10
     retry_delay = 60
-    log("Moving node_modules directory to /home/alpine/serverless")
-    mv_cmd = f"mv /home/alpine/node_modules {CLOUDSTASH_CODE_PATH}"
-    mv_cmd_res = shell(mv_cmd)
-    if mv_cmd_res.returncode != 0:
-        log("There was an error moving the node_modules to the serverless directory, exitting ...", error=True)
-        exit(1)
+
+    import os
+
+    if not os.path.isdir(f"{CLOUDSTASH_CODE_PATH}/node_modules"):
+        log("Moving node_modules directory to /home/alpine/serverless")
+        #  mv_cmd = f"[ ! -d {CLOUDSTASH_CODE_PATH}/node_modules ] && mv /home/alpine/node_modules {CLOUDSTASH_CODE_PATH}"
+        mv_cmd = f"mv /home/alpine/node_modules {CLOUDSTASH_CODE_PATH}/"
+        mv_cmd_res = shell(mv_cmd)
+        if mv_cmd_res.returncode != 0:
+            log(mv_cmd_res.stdout, error=True)
+            log("There was an error moving the node_modules to the serverless directory, exitting ...", error=True)
+            exit(1)
+    else:
+        log("Found existing node_modules.")
+
     log(f"Deploying Cloudstash to stage {stage}")
     cmd = f"serverless deploy --stage {stage}"
     res = shell(cmd, context=CLOUDSTASH_CODE_PATH)
@@ -95,18 +104,19 @@ def find_apigateway_url(log_output: str) -> str:
         return None
 
 
-stage = "deploy-test-1"
-gateway_url, deployed = deploy_cloudstash(stage)
-time.sleep(10)
-print()
-print()
-print("deployed", deployed)
-print("gateway_url", gateway_url)
-print()
-print()
-removed = remove_deployment(stage)
-print()
-print()
-print("removed", removed)
-print()
-print()
+# TEST
+#  stage = "deploy-test-1"
+#  gateway_url, deployed = deploy_cloudstash(stage)
+#  time.sleep(10)
+#  print()
+#  print()
+#  print("deployed", deployed)
+#  print("gateway_url", gateway_url)
+#  print()
+#  print()
+#  removed = remove_deployment(stage)
+#  print()
+#  print()
+#  print("removed", removed)
+#  print()
+#  print()

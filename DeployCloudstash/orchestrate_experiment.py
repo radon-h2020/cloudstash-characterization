@@ -5,13 +5,13 @@ from deploy_remove_cloudstash import deploy_cloudstash, remove_deployment
 stage = "deploy-test-1"
 
 # deploy cloudstash using serverless, get the api gateway url of the deployment
-gateway_url, deployed = deploy_cloudstash(stage)
+#  gateway_url, deployed = deploy_cloudstash(stage)
 
-# set gateway url as environment variable
-shell(f"export gateway_url={gateway_url}")
+#  set gateway url as environment variable
+#  shell(f"export gateway_url={gateway_url}")
 
-print("deployed", deployed)
-print("gateway_url", gateway_url)
+#  print("deployed", deployed)
+#  print("gateway_url", gateway_url)
 
 # === insert experiment here ===
 
