@@ -94,7 +94,7 @@ def remove_deployment(stage: str) -> bool:
 
 def find_apigateway_url(log_output: str) -> str:
     # regex to match urls that look like 'ttps://89p9orlkfl.execute-api.eu-west-1.amazonaws.com/foo/'
-    regex = "https:\/\/[\D\d]{10}\.execute\-api\..*\.amazonaws\.com\/[a-zA-Z0-9\-]+\/"
+    regex = r"https:\/\/[\D\d]{10}\.execute\-api\..*\.amazonaws\.com\/[a-zA-Z0-9\-]+\/"
     matcher = re.compile(regex)
     search = matcher.search(log_output)
     if search is not None:
