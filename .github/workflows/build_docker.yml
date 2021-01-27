@@ -49,6 +49,8 @@ jobs:
     # needs: test
 
     runs-on: ubuntu-latest
+    container: 
+      options: --user 1000
     if: github.event_name == 'push'
 
     steps:
