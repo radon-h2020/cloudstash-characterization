@@ -71,10 +71,10 @@ resource "null_resource" "orchestrator-provisioner" {
       "sudo usermod -aG docker ubuntu",
 
       # login to github docker registry
-      "echo ${var.github_personal_access_token} | docker login https://docker.pkg.github.com -u ${var.github_username} --password-stdin",
+      "echo ${var.github_personal_access_token} | sudo docker login https://docker.pkg.github.com -u ${var.github_username} --password-stdin",
 
       # pull docker image
-      "docker pull docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main",
+      "sudo docker pull --quiet docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main",
 
       # pull the characterization repository
       "git clone https://github.com/radon-h2020/cloudstash-characterization",
@@ -82,8 +82,11 @@ resource "null_resource" "orchestrator-provisioner" {
       # pull cloudstash repository from eficode git using deployment key
       "chown -R ubuntu:ubuntu /home/ubuntu/.aws",
       "chmod 600 /home/ubuntu/.ssh/id_rsa",
-      "ssh-keyscan ssh-keyscan -H ${var.cloudstash_git_host} >> /home/ubuntu/.ssh/known_hosts",
+      "ssh-keyscan -H ${var.cloudstash_git_host} >> /home/ubuntu/.ssh/known_hosts",
       "git clone ${var.cloudstash_repository}",
+
+      # make sure that ubuntu owns .docker directory
+      "sudo chown -R ubuntu:ubuntu /home/ubuntu/.docker",
     ]
   }
 }

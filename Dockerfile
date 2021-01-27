@@ -11,6 +11,7 @@ ENV NPM_CONFIG_PREFIX=/home/alpine/.npm-global
 ENV PATH=$PATH:$NPM_CONFIG_PREFIX/bin
 
 COPY cloudstash_package.json /tmp/package.json
+COPY . /home/alpine/cloudstash-characterization
 
 RUN \
     # install python, pip, nodejs, npm, bash and aws-cli
@@ -28,8 +29,6 @@ RUN \
     chown -R 1000:1000 /home/alpine
 
 USER alpine
-
-COPY . /home/alpine/cloudstash-characterization
 
 WORKDIR /home/alpine/cloudstash-characterization
 
