@@ -64,14 +64,17 @@ resource "null_resource" "orchestrator-provisioner" {
       "sudo apt-get upgrade -qq",
 
       # will install both docker and docker-compose
-      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq moreutils docker-compose awscli",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq moreutils docker-compose awscli gnupg2 pass",
       # enable docker deamon
       "sudo systemctl enable --now docker",
       # add user to docker group
       "sudo usermod -aG docker ubuntu",
 
-      # TODO add docker image(s)
-      # "sudo docker pull -q ..."
+      # login to github docker registry
+      "echo ${var.github_personal_access_token} | docker login https://docker.pkg.github.com -u ${var.github_username} --password-stdin",
+
+      # pull docker image
+      "docker pull docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main",
 
       # pull the characterization repository
       "git clone https://github.com/radon-h2020/cloudstash-characterization",

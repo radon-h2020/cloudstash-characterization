@@ -1,4 +1,6 @@
 **/.git/*
+.gitignore
+README.md
 Database
 RemoteStateBucket
 EC2

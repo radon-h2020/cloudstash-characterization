@@ -25,3 +25,11 @@ variable "cloudstash_repository" {
 variable "cloudstash_git_host" {
   description = "the hostname of the git host for the cloudstash repository"
 }
+
+variable "github_personal_access_token" {
+  description = "personal access token for github with package read permission"
+}
+
+variable "github_username" {
+  description = "github username that above personal access token belongs to"
+}
