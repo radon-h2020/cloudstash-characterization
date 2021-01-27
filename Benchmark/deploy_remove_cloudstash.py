@@ -99,6 +99,8 @@ def find_apigateway_url(log_output: str) -> str:
     search = matcher.search(log_output)
     if search is not None:
         match = search.group()
+        # strip last / from string
+        match = match[:-1]
         return match
     else:
         return None
