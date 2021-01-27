@@ -84,6 +84,7 @@ resource "null_resource" "orchestrator-provisioner" {
       "chmod 600 /home/ubuntu/.ssh/id_rsa",
       "ssh-keyscan -H ${var.cloudstash_git_host} >> /home/ubuntu/.ssh/known_hosts",
       "git clone ${var.cloudstash_repository}",
+      "cd /home/ubuntu/${var.cloudstash_repository} && git checkout deploy_without_dns",
 
       # make sure that ubuntu owns .docker directory
       "sudo chown -R ubuntu:ubuntu /home/ubuntu/.docker",
