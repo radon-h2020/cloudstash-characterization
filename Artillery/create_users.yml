@@ -7,7 +7,7 @@ config:
     - duration: 10
       arrivalRate: 1
   payload:
-    # path is relative to the location of the test script 
+    # path is relative to the location of the test script
     path: "users.csv"
     fields:
       - "username"
