@@ -1,0 +1,67 @@
+config:
+  target: https://kt2nk7vgkg.execute-api.eu-west-1.amazonaws.com/testcn
+  http:
+    # Responses have to be sent within 10 seconds or the request will be aborted
+    timeout: 10
+  phases:
+    - duration: 10
+      arrivalRate: 1
+  # defaults:
+  #   headers:
+  #     x-api-key: "{{ $processEnvironment.SERVICE_API_KEY }}"
+
+  # config:
+  payload:
+    # path is relative to the location of the test script 
+    path: "users.csv"
+    fields:
+      - "username"
+      - "password"
+    order: sequence
+    skipHeader: true
+scenarios:
+  # - flow:
+  #     - get:
+  #         url: "/"
+  # - flow:
+  #     - get: 
+  #         url: "/repository"
+  # - flow:
+  #     - get: 
+  #         url: ""
+  # - flow: 
+  #   - post:
+  #       url: "/login"
+  #       body: "{\"username\":\"niss\",\"password\":\"asq33zba2020\"}"
+
+  - flow:
+    - log: "New virtual user running" 
+    - post:
+        url: "/login"
+        # body: "{\"username\": \" NIssen2 \",\"password\": \"password\" }"
+        json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+        gzip: true
+        capture:
+          header: "$.authtoken"
+          as: "token"
+    - get:
+        url: "/repository"
+        expect: 200
+        # headers:
+          # authtoken: "{{ token }}"
+
+    # - post:
+    #     url: "/login"
+    #     # body: "{\"username\": \" NIssen2 \",\"password\": \"password\" }"
+    #     json:
+    #         username: "Nissen2"
+    #         password: "password"
+
+
+        # body: "{\"username\":\"{{ username }}\",\"password\":\"{{ password }}\"}"
+        # json:
+        #     username: "{{ username }}"
+        #     password: "{{ password }}"
+        # gzip: true
