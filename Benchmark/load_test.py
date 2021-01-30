@@ -10,4 +10,31 @@ config = GlobalConfig.get()
 
 
 def run_load_test(benchmark: Benchmark):
-    log("load_test")
+    artillery_script = ""
+
+    ###
+    # Deploy cloudstash
+    ###
+
+    # deploy cloudstash using serverless, get the api gateway url of the deployment
+    gateway_url, deployed = deploy_cloudstash(benchmark.stage)
+
+    # make sure everything is ready before starting benchmark
+    #  log(f"Waiting {delay} seconds before starting benchmark")
+    #  sleep(delay)
+
+    ###
+    # Run the benchmark
+    ###
+
+    # run benchmark
+    benchmark_run = run_artillery(artillery_script, gateway_url)
+
+    # TODO parse artillery output step
+
+    ###
+    # Teardown cloudstash instance
+    ###
+
+    # remove the cloudstash deployment
+    removed = remove_deployment(benchmark.stage)

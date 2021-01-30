@@ -67,42 +67,5 @@ if benchmark_to_run == "sequential_upload":
 elif benchmark_to_run == "load_test":
     run_load_test(benchmark)
 else:
-    print("")
+    print("You must pass one of 'sequential_upload' or 'load_test' as the benchmark argument.")
     sys.exit(1)
-
-
-# === TODO these should be read from cli
-# what stage to deploy
-#  stage = "deploy-test-1"
-# what artillery script to run on the deployed cloudstash
-#  artillery_script = "create_users.yml"
-#  gateway_url = "https://zn0reubddh.execute-api.eu-west-1.amazonaws.com/deploy-test-1"
-# ===
-
-###
-# Deploy cloudstash
-###
-
-# deploy cloudstash using serverless, get the api gateway url of the deployment
-#  gateway_url, deployed = deploy_cloudstash(stage)
-
-# make sure everything is ready before starting benchmark
-#  log(f"Waiting {delay} seconds before starting benchmark")
-#  sleep(delay)
-
-###
-# Run the benchmark
-###
-
-# run benchmark
-#  benchmark_run = run_artillery(artillery_script, gateway_url, True)
-#  benchmark_run = run_artillery(artillery_script, gateway_url)
-
-# TODO parse artillery output step
-
-###
-# Teardown cloudstash instance
-###
-
-# remove the cloudstash deployment
-#  removed = remove_deployment(stage)
