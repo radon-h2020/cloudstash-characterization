@@ -9,5 +9,5 @@ from benchmark import Benchmark
 config = GlobalConfig.get()
 
 
-def run_sequential_benchmark(benchmark: Benchmark):
-    log("sequential")
+def run_load_test(benchmark: Benchmark):
+    log("load_test")

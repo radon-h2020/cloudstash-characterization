@@ -1,11 +1,12 @@
+import sys
 from argparse import ArgumentParser
 from time import sleep
 from uuid import uuid4
 from utils import shell, log
-from deploy_remove_cloudstash import deploy_cloudstash, remove_deployment
-from run_artillery import run_artillery
 from config import GlobalConfig
 from benchmark import Benchmark
+from sequential_benchmark import run_sequential_benchmark
+from load_test import run_load_test
 
 # get config singleton
 config = GlobalConfig.get()
@@ -61,11 +62,13 @@ benchmark = Benchmark(benchmark=benchmark_to_run, stage=stage, number_of_artefac
 # Run benchmark
 ###
 
-if benchmark_to_run is "sequential_upload":
-    print('foo')
-elif benchmark_to_run is "load_test":
-    print('bar')
+if benchmark_to_run == "sequential_upload":
+    run_sequential_benchmark(benchmark)
+elif benchmark_to_run == "load_test":
+    run_load_test(benchmark)
 else:
+    print("")
+    sys.exit(1)
 
 
 # === TODO these should be read from cli
