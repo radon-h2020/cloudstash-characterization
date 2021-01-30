@@ -1,11 +1,12 @@
 #!/bin/python
 
+from subprocess import run, PIPE, CompletedProcess, CalledProcessError
 import shlex
 import time
 from pprint import pprint
-from config import DEBUG, VERBOSE
-from subprocess import run, PIPE, CompletedProcess, CalledProcessError
-from pprint import pprint
+from config import GlobalConfig
+
+config = GlobalConfig.get()
 
 
 def log(message: str, error: bool = False) -> None:
@@ -24,7 +25,7 @@ def shell(cmd: str, context: str = None, env: dict = None) -> CompletedProcess:
     # use shlex.split to split command string on spaces to a list of strings
     cmd_list = shlex.split(cmd)
 
-    if DEBUG:
+    if config.DEBUG:
         print("---DEBUG")
         print("shell cmd:", cmd)
         if context is not None:

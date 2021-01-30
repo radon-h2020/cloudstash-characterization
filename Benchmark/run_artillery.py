@@ -4,7 +4,7 @@ from utils import shell, log
 from config import ARTILLERY_CODE_PATH, ARTILLERY_OUTPUT_PATH, ARTILLERY_BIN_PATH
 
 
-def run_artillery(script_file: str, gateway_url: str) -> bool:
+def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> bool:
     log(f"Running Artillery with script {script_file}")
 
     # output report timestamp
@@ -16,8 +16,13 @@ def run_artillery(script_file: str, gateway_url: str) -> bool:
     env = {"gateway_url": gateway_url}
     # create artillery command to be run
     artillery_cmd = f"""{ARTILLERY_BIN_PATH} run --output {output_file} {script_file}"""
+
     # run artillery command
     res = shell(artillery_cmd, context=ARTILLERY_CODE_PATH, env=env)
+
+    # print the output of the artillery command to stdout?
+    if print_output_to_stdout:
+        log(f"Artillery run stdout: {res.stdout}")
 
     if res.returncode == 0:
         log(f"Successfully finished running artillery script {script_file}")
