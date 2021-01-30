@@ -1,7 +1,10 @@
 import json
 import time
 from utils import shell, log
-from config import ARTILLERY_CODE_PATH, ARTILLERY_OUTPUT_PATH, ARTILLERY_BIN_PATH
+from config import GlobalConfig
+
+# get config singleton
+config = GlobalConfig.get()
 
 
 def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> bool:
@@ -9,16 +12,16 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
 
     # output report timestamp
     timestamp = time.strftime("%Y-%d_%m-%H_%M_%S", time.localtime())
-    output_file = f"{ARTILLERY_OUTPUT_PATH}/{timestamp}-report.json"
+    output_file = f"{config.ARTILLERY_OUTPUT_PATH}/{timestamp}-report.json"
     log(f"Outputting report to {output_file}")
 
     # set environment variables for the artillery process
     env = {"gateway_url": gateway_url}
     # create artillery command to be run
-    artillery_cmd = f"""{ARTILLERY_BIN_PATH} run --output {output_file} {script_file}"""
+    artillery_cmd = f"""{config.ARTILLERY_BIN_PATH} run --output {output_file} {script_file}"""
 
     # run artillery command
-    res = shell(artillery_cmd, context=ARTILLERY_CODE_PATH, env=env)
+    res = shell(artillery_cmd, context=config.ARTILLERY_CODE_PATH, env=env)
 
     # print the output of the artillery command to stdout?
     if print_output_to_stdout:

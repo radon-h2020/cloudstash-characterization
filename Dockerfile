@@ -30,6 +30,7 @@ RUN \
 
 USER alpine
 
-WORKDIR /home/alpine/cloudstash-characterization
+WORKDIR /home/alpine/cloudstash-characterization/Benchmark
 
-CMD ["bash"]
+ENTRYPOINT ["python3", "orchestrate_benchmark.py"]
+CMD ["--help"]

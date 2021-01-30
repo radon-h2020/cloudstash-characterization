@@ -6,6 +6,7 @@ import time
 from pprint import pprint
 from config import GlobalConfig
 
+# get config singleton
 config = GlobalConfig.get()
 
 
