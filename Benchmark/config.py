@@ -26,6 +26,9 @@ class GlobalConfig:
         #  ARTILLERY_OUTPUT_PATH = "/home/alpine/cloudstash-characterization/Artillery/output/report.json"
         self.ARTILLERY_OUTPUT_PATH = "/tmp"
 
+        # path to generator artifact output folder and code
+        self.GENERATOR_PATH = "/home/alpine/cloudstash-characterization/ArtifactGenerator"
+
         # enable/disable debug prints
         self.DEBUG = False
 
