@@ -9,3 +9,4 @@ class Benchmark:
         self.number_of_artefacts = number_of_artefacts
         self.start_time = time()
         self.end_time = None
+        self.gateway_url = None
