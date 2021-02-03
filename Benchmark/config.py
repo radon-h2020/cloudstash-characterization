@@ -49,3 +49,8 @@ class GlobalConfig:
 
         # where to store generated artifacts
         self.ARTIFACT_STORE_PATH = "/home/alpine/artifacts"
+
+        # lower limit for artifact sizes in bytes
+        self.ARTIFACT_SIZE_LOWER = 2500
+        # upper limit for artifact sizes in bytes
+        self.ARTIFACT_SIZE_UPPER = 10000

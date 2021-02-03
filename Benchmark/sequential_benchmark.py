@@ -9,6 +9,7 @@ import shutil
 import errno
 import base64
 import os
+import random
 from time import sleep
 from artillery_report_parser import parse_artillery_output
 from benchmark import Benchmark
@@ -26,6 +27,9 @@ from cloudstash_api_wrapper import (
 
 # get config singleton
 config = GlobalConfig.get()
+
+# set random seed
+random.seed(1)
 
 
 def run_sequential_benchmark(benchmark: Benchmark):
@@ -134,7 +138,7 @@ def run_benchmark(benchmark: Benchmark) -> (bool, dict):
             if i % 100 == 0:
                 log(f"Processing request #{i} ...")
 
-            artifact_size = 100
+            artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
             # make sure that we do not add the same benchmark_data multiple times
             benchmark_data = None
