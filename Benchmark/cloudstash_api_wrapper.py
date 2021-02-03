@@ -22,11 +22,20 @@ def cloudstash_create_user(benchmark: Benchmark, username: str, password: str) -
     endpoint_url = f"{benchmark.gateway_url}/signup"
     headers = {"content-type": "application/json"}
 
-    response = requests.post(
-        endpoint_url,
-        json=payload,
-        headers=headers,
-    )
+    for _ in range(0, config.RETRIES):
+        response = requests.post(
+            endpoint_url,
+            json=payload,
+            headers=headers,
+        )
+        if response.status_code == 200:
+            break
+        else:
+            log(
+                f"Received {response.status_code} status code when creating user {username}, waiting {config.RETRY_DELAY}s before trying again.",
+                error=True,
+            )
+            time.sleep(config.RETRY_DELAY)
 
     log(f"Create user request HTTP status code: {response.status_code}")
     message_str_split = response.json()["message"].split(" ")  # extract from response
@@ -50,10 +59,19 @@ def cloudstash_login_user(benchmark: Benchmark, username: str, password: str) ->
         "password": password,
     }
 
-    response = requests.post(
-        endpoint_url,
-        json=payload,
-    )
+    for _ in range(0, config.RETRIES):
+        response = requests.post(
+            endpoint_url,
+            json=payload,
+        )
+        if response.status_code == 200:
+            break
+        else:
+            log(
+                f"Received {response.status_code} status code when logging in user {username}, waiting {config.RETRY_DELAY}s before trying again.",
+                error=True,
+            )
+            time.sleep(config.RETRY_DELAY)
 
     log(f"User {username} login request HTTP status code {response.status_code}")
 
@@ -80,12 +98,21 @@ def cloudstash_create_repository(benchmark: Benchmark, session_token: str, repos
     headers = {"content-type": "application/json"}
     cookies = {"authtoken": session_token}
 
-    response = requests.post(
-        endpoint_url,
-        json=payload,
-        headers=headers,
-        cookies=cookies,
-    )
+    for _ in range(0, config.RETRIES):
+        response = requests.post(
+            endpoint_url,
+            json=payload,
+            headers=headers,
+            cookies=cookies,
+        )
+        if response.status_code == 200:
+            break
+        else:
+            log(
+                f"Received {response.status_code} status code when creating repository {repository_name}, waiting {config.RETRY_DELAY}s before trying again.",
+                error=True,
+            )
+            time.sleep(config.RETRY_DELAY)
 
     log(f"Create repository request HTTP status code {response.status_code}")
 

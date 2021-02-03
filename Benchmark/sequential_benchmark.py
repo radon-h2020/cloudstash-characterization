@@ -50,20 +50,20 @@ def run_sequential_benchmark(benchmark: Benchmark):
     log("----- Run Benchmark")
 
     # run benchmark
-    benchmark_sucess, benchmark_data = run_benchmark(benchmark)
+    if deployed:
+        benchmark_ran, benchmark_data = run_benchmark(benchmark)
 
-    #  save when the experiment finished running
-    benchmark.log_experiment_stop_time()
+        #  save when the experiment finished running
+        benchmark.log_experiment_stop_time()
 
     ###
     # Parse benchmark output
     ###
     log("----- Parse Benchmark results")
 
-    benchmark_output_file = (
-        f"{config.BENCHMARK_OUTPUT_PATH}/{benchmark.stage}-{benchmark.benchmark}-{benchmark.number_of_artefacts}.csv"
-    )
-    wrote_file = write_benchmark_results_csv_file(benchmark, benchmark_output_file, benchmark_data)
+    if benchmark_ran:
+        benchmark_output_file = f"{config.BENCHMARK_OUTPUT_PATH}/{benchmark.stage}-{benchmark.benchmark}-{benchmark.number_of_artefacts}.csv"
+        wrote_file = write_benchmark_results_csv_file(benchmark, benchmark_output_file, benchmark_data)
 
     ###
     # Teardown cloudstash instance
@@ -117,10 +117,12 @@ def run_benchmark(benchmark: Benchmark) -> (bool, dict):
     user_created, deploy_token = cloudstash_create_user(benchmark, username, password)
 
     # login user to get session token
-    logged_in, session_token = cloudstash_login_user(benchmark, username, password)
+    if user_created:
+        logged_in, session_token = cloudstash_login_user(benchmark, username, password)
 
     # Create one respository
-    repo_created = cloudstash_create_repository(benchmark, session_token, repository)
+    if logged_in:
+        repo_created = cloudstash_create_repository(benchmark, session_token, repository)
 
     if user_created and repo_created:
         # Execute the sequential load test
