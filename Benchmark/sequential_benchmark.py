@@ -1,18 +1,21 @@
-from configparser import Error, NoOptionError
+import sys
+
+sys.path.append("../ArtifactGenerator")  # noqa
+from artillery_report_parser import parse_artillery_output
+from benchmark import Benchmark
+from artifact_generator import generate_artifact
+from configparser import Error as configparser_error, NoOptionError
 import shutil
 import errno
 import base64
 import os
 import requests
 import configparser
-import click
 from time import sleep
 from utils import shell, log
 from deploy_remove_cloudstash import deploy_cloudstash, remove_deployment
 from run_artillery import run_artillery
 from config import GlobalConfig
-from benchmark import Benchmark
-from ArtifactGenerator import generator
 
 
 # get config singleton
@@ -27,29 +30,46 @@ def run_sequential_benchmark(benchmark: Benchmark):
     ###
 
     # deploy cloudstash using serverless, get the api gateway url of the deployment
-    gateway_url, deployed = deploy_cloudstash(benchmark.stage)
+    #  gateway_url, deployed = deploy_cloudstash(benchmark.stage)
     # set gateway_url in benchmark object
-    benchmark.gateway_url = gateway_url
+    #  benchmark.gateway_url = gateway_url
+
+    gateway_url = "https://vsjf4tj6he.execute-api.eu-west-1.amazonaws.com/23e0df0c"
+
+    #  generated = generate_artifact(
+        #  artifact_size=100,
+        #  artifact_name=f"{config.ARTIFACT_STORE_PATH}/artifact.zip",
+        #  cloudstash_repo="seq-test",
+        #  cloudstash_org="seq-benchmark-org",
+    #  )
+
+    run_benchmark
 
     # make sure everything is ready before starting benchmark
-    #  log(f"Waiting {delay} seconds before starting benchmark")
-    #  sleep(delay)
+    #  log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
+    #  sleep(config.ORCHESTRATION_DELAY)
 
     ###
     # Run the benchmark
     ###
 
     # run benchmark
-    benchmark_run = run_artillery(artillery_script, gateway_url)
+    #  benchmark_run, report_file = run_artillery(artillery_script, gateway_url)
 
-    # TODO parse artillery output step
+    # save when the experiment finished running
+    #  benchmark.log_experiment_stop_time()
+
+    ###
+    # Parse artillery output
+    ###
+    #  parsed = parse_artillery_output(report_file)
 
     ###
     # Teardown cloudstash instance
     ###
 
     # remove the cloudstash deployment
-    removed = remove_deployment(benchmark.stage)
+    #  removed = remove_deployment(benchmark.stage)
 
 
 def read_config(config_file):
@@ -57,11 +77,12 @@ def read_config(config_file):
         config = configparser.ConfigParser()
         config.read(config_file)
         return config
-    except Error as e:
-        click.secho(f"{e}", fg="red")
+    except configparser_error as e:
+        log("Error reading artifact config file.", error=True)
+        raise e
 
 
-def upload_artifact(benchmark: Benchmark):
+def run_benchmark(benchmark: Benchmark) -> (bool, str):
     zip_name = "artifact.zip"
 
     # Create one user
@@ -74,26 +95,24 @@ def upload_artifact(benchmark: Benchmark):
         json=payload,
         headers={"content-type": "application/json"},
     )
-    click.echo(r.status_code)
+    log(r.status_code)
     message_str_split = r["message"].split(" ")  # extract from response
     user_token = message_str_split[len(message_str_split) - 1]  # take out last word of return message, should be token
     log(f"Obtained deploy token {user_token}")
-
 
     # Create one respository
     log(f"Creating repository for user account...")
     cloudstash_repo = "benchmark"
     payload = {}
     payload["repository"] = cloudstash_repo
-    payload["repositoryType"] = "Artifact Repository" # Really not sure about these values. 
+    payload["repositoryType"] = "Artifact Repository"  # Really not sure about these values.
     payload["repositoryAvailability"] = "public"
     r = requests.post(
         f"{benchmark.gateway_url}/repository",
         json=payload,
         headers={"content-type": "application/json", "Cookie": f"authtoken={user_token}"},
     )
-    click.echo(r.status_code)
-
+    log(r.status_code)
 
     # Execute the sequential load test
     # for the number of artifacts specified in benchmark:
@@ -125,9 +144,7 @@ def upload_artifact(benchmark: Benchmark):
                     encoded = base64.b64encode(binfile.read())
                 payload["file"] = encoded  # .decode()
 
-                click.secho(
-                    f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}", bold=True
-                )
+                log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
                 r = requests.post(
                     f"{benchmark.gateway_url}/artifact",
@@ -136,14 +153,14 @@ def upload_artifact(benchmark: Benchmark):
                     if user_token
                     else {"content-type": "application/json"},
                 )
-                click.echo(r.status_code)
+                log(r.status_code)
 
             except KeyError as ke:
-                click.secho(f"{ke}", fg="red")
+                log(f"{ke}")
             except NoOptionError as noe:
-                click.secho(f"{noe}", fg="red")
+                log(f"{noe}")
             except requests.exceptions.RequestException as re:
-                click.secho(f"{re}", fg="red")
+                log(f"{re}")
 
             # Remove generated artifact from local fs
             cmd = f"rm generator.py"

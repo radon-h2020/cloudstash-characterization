@@ -10,3 +10,6 @@ class Benchmark:
         self.start_time = time()
         self.end_time = None
         self.gateway_url = None
+
+    def log_experiment_stop_time(self) -> None:
+        self.end_time = time()

@@ -1,3 +1,4 @@
+artifacts
 logs/*
 **/__pycache__/*
 ArtifactGenerator/*.txt

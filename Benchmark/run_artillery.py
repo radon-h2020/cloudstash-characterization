@@ -1,4 +1,3 @@
-import json
 import time
 from utils import shell, log
 from config import GlobalConfig
@@ -7,7 +6,7 @@ from config import GlobalConfig
 config = GlobalConfig.get()
 
 
-def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> bool:
+def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> (bool, str):
     log(f"Running Artillery with script {script_file}")
 
     # output report timestamp
@@ -29,21 +28,14 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
 
     if res.returncode == 0:
         log(f"Successfully finished running artillery script {script_file}")
-        return True
+        return (True, output_file)
     else:
         log(
             f"There was an error running artillery script {script_file}, returncode was {res.returncode}",
             error=True,
         )
         log(f"(artillery stdout) {res.stdout}", error=True)
-        return False
-
-
-# TODO
-#  def parse_artillery_output(report_file:str) -> bool:
-#  report = json.load(report_file)
-#  import pprint
-#  pprint(report)
+        return (False, None)
 
 
 # TEST

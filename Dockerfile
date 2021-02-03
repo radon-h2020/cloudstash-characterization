@@ -18,6 +18,9 @@ RUN \
     apk add --no-cache bash aws-cli nodejs npm python3 py3-pip && \
     # install artillery npm packages globally
     npm install -g artillery serverless-artillery && \
+    # create direcotry to store generated artifacts and reports
+    mkdir -p /home/alpine/artifacts && \
+    mkdir -p /home/alpine/output && \
     # add a non-root user and group, with specific group and user id 1000:1000
     addgroup -S alpine -g 1000 && \
     adduser -S alpine -G alpine -u 1000 && \
