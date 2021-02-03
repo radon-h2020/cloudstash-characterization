@@ -24,8 +24,8 @@ class GlobalConfig:
 
         # where to output artillery reports
         # TODO change
-        #  ARTILLERY_OUTPUT_PATH = "/home/alpine/output/report.json"
-        self.ARTILLERY_OUTPUT_PATH = "/tmp"
+        #  ARTILLERY_OUTPUT_PATH = "/home/alpine/output"
+        self.BENCHMARK_OUTPUT_PATH = "../output"
 
         # path to generator artifact output folder and code
         self.GENERATOR_PATH = "/home/alpine/cloudstash-characterization/ArtifactGenerator"
@@ -47,7 +47,7 @@ class GlobalConfig:
 
         # how long to wait between orchestration steps, e.g. how long to wait between
         # creating the infrastructure and starting the benchmark
-        self.ORCHESTRATION_DELAY = 60
+        self.ORCHESTRATION_DELAY = 10
 
         # where to store generated artifacts
         # TODO change

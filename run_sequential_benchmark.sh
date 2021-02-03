@@ -41,6 +41,22 @@ echo -e "${BOLD}${GREEN}--> $1${NONE}"
 }
 
 ###
+### sanity check
+###
+
+if [ ! "$USER" = "ubuntu" ] && [[ ! $* = *--local*  ]] ; then
+    error_msg "You do not seem to be running on the server, use flag --local for runnig locally."
+    exit 1
+elif [ ! "$USER" = "ubuntu" ] && [[ $* = *--local*  ]] ; then
+    progress_msg "Running script in local mode."
+elif [ "$USER" = "ubuntu" ] && [[ $* = *--local*  ]] ; then
+    msg "You seem to be trying to run in local mode on the server."
+    exit 1
+elif [ "$USER" = "ubuntu" ] && [[ ! $* = *--local*  ]] ; then
+    msg "Running script in production mode."
+fi
+
+###
 ### Script vars
 ###
 
@@ -50,52 +66,70 @@ set -e
 # create a timestamp
 timestamp=$(date +"%H-%M-%S_%m-%d_%Y")
 
-# name of container
-container_name="sequential-benchmark-$timestamp"
-
-# where are log files stored
-log_dir="logs"
-# TODO change
-# log_dir="/home/ubuntu/logs"
+if [[ $* = *--local* ]] ; then
+    log_dir="logs"
+    output_dir="output"
+    artifacts_dir="artifacts"
+    local_dir=$(pwd)
+else
+    log_dir="/home/ubuntu/logs"
+    output_dir="/home/ubuntu/output"
+    artifacts_dir="/home/ubuntu/artifacts"
+fi
 
 # create log dir if it does not exist
 [ ! -d "$log_dir" ] && progress_msg "Creating logs directory ..." && mkdir -p "$log_dir"
-
-# logfile for container
-logfile="$log_dir/$container_name.log"
+[ ! -d "$output_dir" ] && progress_msg "Creating output directory ..." && mkdir -p "$output_dir"
+[ ! -d "$artifacts_dir" ] && progress_msg "Creating artifacts directory ..." && mkdir -p "$artifacts_dir"
 
 # what benchmark to run
 benchmark="sequential_upload"
 
 # how many artefacts to upload in the benchmark
 number_of_artefacts=10
+# number_of_artefacts=200
 # TODO change
 # number_of_artefacts=100000
 
+# name of container
+container_name="$benchmark-$number_of_artefacts-$timestamp"
+
+# logfile for container
+logfile="$log_dir/$container_name.log"
+
 # create the docker cmd as a string that we can run in the background, but still pipe stdout to logfile
-cmd="
-docker run \
-    --rm \
-    --name $container_name \
-    -v /home/zander/eficode/radon/cloudstash-characterization/EC2/secrets/.aws:/home/alpine/.aws:ro \
-    -v /home/zander/eficode/radon/cloudstash/serverless:/home/alpine/serverless \
-    -v /home/zander/eficode/radon/cloudstash-characterization:/home/alpine/cloudstash-characterization \
-    cc:latest \
-    $benchmark $number_of_artefacts \
-    > $logfile
-"
-# TODO change away from dev
-# docker run --rm -it \
-    # -v /home/ubuntu/.aws:/home/alpine/.aws:ro \
-    # -v /home/ubuntu/cloudstash/serverless:/home/alpine/serverless \
-    # docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main
+if [[ $* = *--local* ]] ; then
+    cmd="
+    docker run \
+        --rm \
+        --name $container_name \
+        -v $local_dir/EC2/secrets/.aws:/home/alpine/.aws:ro \
+        -v $local_dir/../cloudstash/serverless:/home/alpine/serverless \
+        -v $local_dir:/home/alpine/cloudstash-characterization \
+        -v $local_dir/artifacts:/home/alpine/artifacts \
+        -v $local_dir/output:/home/alpine/output \
+        cc:latest \
+        $benchmark $number_of_artefacts \
+        > $logfile
+    "
+else
+    cmd="
+    docker run \
+        --rm \
+        --name $container_name \
+        -v /home/ubuntu/.aws:/home/alpine/.aws:ro \
+        -v /home/ubuntu/cloudstash/serverless:/home/alpine/serverless \
+        -v /home/ubuntu/output:/home/alpine/output \
+        -v /home/ubuntu/artifacts:/home/alpine/artifacts \
+        docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main
+        $benchmark $number_of_artefacts \
+        > $logfile
+    "
+fi
 
 ###
 ### Running the benchmark container
 ###
-
-# TODO remove
-error_msg "NOTE THAT THIS SCRIPT IS RUNNING IN DEVELOPMENT MODE"
 
 start_msg "Now running benchmark: $benchmark"
 progress_msg "Number of artefacts that will be uploaded: $number_of_artefacts"

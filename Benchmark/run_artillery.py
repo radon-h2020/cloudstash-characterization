@@ -11,7 +11,7 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
 
     # output report timestamp
     timestamp = time.strftime("%Y-%d_%m-%H_%M_%S", time.localtime())
-    output_file = f"{config.ARTILLERY_OUTPUT_PATH}/{timestamp}-report.json"
+    output_file = f"{config.BENCHMARK_OUTPUT_PATH}/{timestamp}-report.json"
     log(f"Outputting report to {output_file}")
 
     # set environment variables for the artillery process

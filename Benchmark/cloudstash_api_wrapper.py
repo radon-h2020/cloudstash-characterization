@@ -1,6 +1,7 @@
 import sys
 import requests
 import base64
+import time
 from configparser import Error as configparser_error, NoOptionError, ConfigParser
 from benchmark import Benchmark
 from artifact_generator import generate_artifact
@@ -102,20 +103,19 @@ def read_config(config_file):
 
 
 def cloudstash_upload_artifact(
-    benchmark: Benchmark, artifact_num: int, deploy_token: str, repository: str, org: str
+    benchmark: Benchmark,
+    artifact_num: int,
+    artifact_size: int,
+    username: str,
+    deploy_token: str,
+    repository: str,
+    org: str,
 ) -> True:
-    # Call generate artifact
-    # python generator.py <artifact size in bytes> <zip filename> <cloudstash org> <cloudstash repo> <zip files>
-    #  cmd = f"python generator.py 100 {zip_name} benchmark {cloudstash_repo} True"
-    #  res = shell(cmd, context=config.GENERATOR_PATH)
-    #  returncode = res.returncode
-    #  else:
-    #  # fail, try again
-    #  log(f"Failed generating artifact for request {artifact_num}")
 
-    artifact_size = 100
-    artifact_filename = f"{config.ARTIFACT_STORE_PATH}/{artifact_num}_artifact.zip"
+    artifact_zip_file = f"{artifact_num}_artifact.zip"
+    artifact_filename = f"{config.ARTIFACT_STORE_PATH}/{artifact_zip_file}"
 
+    # if artifact has already been created, existing artifact will be used
     # retry up to 5 times to generate artifact
     for _ in range(0, 5):
         generated_artifact = generate_artifact(
@@ -157,18 +157,42 @@ def cloudstash_upload_artifact(
                 encoded = base64.b64encode(binfile.read())
             payload["file"] = encoded.decode()
 
-            log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
+            if config.VERBOSE:
+                log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
             headers = {"content-type": "application/json", "Authorization": deploy_token}
+
+            start_time = time.time()
 
             response = requests.post(
                 f"{benchmark.gateway_url}/artifact",
                 json=payload,
                 headers=headers,
             )
-            log(f"Upload Artifact HTTP status code: {response.status_code}")
 
-            return True if response.status_code == 200 else False
+            end_time = time.time()
+            total_time = end_time - start_time
+
+            if config.VERBOSE:
+                log(f"Upload Artifact HTTP status code: {response.status_code}")
+
+            # dict containing data for the upload
+            benchmark_data = {
+                "start_time": start_time,
+                "end_time": end_time,
+                "total_time": total_time,
+                "status_code": response.status_code,
+                "artifact_num": artifact_num,
+                "artifact_name": artifact_zip_file,
+                "artifact_size": artifact_size,
+                "repository": repository,
+                "user": username,
+            }
+
+            if response.status_code == 200:
+                return (True, benchmark_data)
+            else:
+                return (False, benchmark_data)
 
         except (KeyError, NoOptionError, requests.exceptions.RequestException) as err:
             log(f"Encountered an error trying to upload artifact #{artifact_num} error:{err}", error=True)

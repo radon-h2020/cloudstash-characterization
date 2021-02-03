@@ -59,33 +59,49 @@ def deploy_cloudstash(stage: str) -> (str, bool):
 
 def remove_deployment(stage: str) -> bool:
     log(f"Removing Cloudstash with stage {stage}")
-    cmd = f"serverless remove --stage {stage}"
-    res = shell(cmd, context=config.CLOUDSTASH_CODE_PATH)
-    returncode = res.returncode
 
-    while returncode != 0 and config.RETRIES > 0:
-        log(
-            f"Removing cloudstash with stage {stage} had returncode {returncode}, will retry removing {config.RETRIES} more times.",
-            error=True,
-        )
-        log(f"(serverless remove stdout) {res.stdout}", error=True)
-        log(f"Wating {config.RETRY_DELAY} seconds before next attempt.")
-        time.sleep(config.RETRY_DELAY)
-        config.RETRIES -= 1
-        # retry remove
+    log("Removing artifact bucket and deleting all artifacts ...")
+    delete_s3_bucket_cmd = f"aws s3 rb s3://artifacts-{stage} --force"
+    s3_del_res = shell(delete_s3_bucket_cmd, context=config.CLOUDSTASH_CODE_PATH)
+    if config.VERBOSE:
+        log(f"(aws s3 rb stdout) {s3_del_res.stdout}")
+    s3_del_rc = s3_del_res.returncode
+    if s3_del_rc != 0:
+        log("Error deleteing artifacts s3 bucket", error=True)
+        log(f"(aws s3 rb stdout) {s3_del_res.stdout}")
+
+    if s3_del_rc == 0:
+
+        log("Removing cloudstash resources using serverless remove ...")
+        cmd = f"serverless remove --stage {stage}"
         res = shell(cmd, context=config.CLOUDSTASH_CODE_PATH)
         returncode = res.returncode
 
-    if returncode != 0 and config.RETRIES == 0:
-        log("Error removing cloudstash, max number of retries reached, exitting ...", error=True)
-        sys.exit(1)
+        while returncode != 0 and config.RETRIES > 0:
+            log(
+                f"Removing cloudstash with stage {stage} had returncode {returncode}, will retry removing {config.RETRIES} more times.",
+                error=True,
+            )
+            log(f"(serverless remove stdout) {res.stdout}", error=True)
+            log(f"Wating {config.RETRY_DELAY} seconds before next attempt.")
+            time.sleep(config.RETRY_DELAY)
+            config.RETRIES -= 1
+            # retry remove
+            res = shell(cmd, context=config.CLOUDSTASH_CODE_PATH)
+            returncode = res.returncode
 
-    # if successfully deployed, return no error message, and True
-    log(f"Successfully removed cloudstash with stage {stage}")
-    if config.VERBOSE:
-        log(f"(serverless remove stdout) {res.stdout}")
+        if returncode != 0 and config.RETRIES == 0:
+            log("Error removing cloudstash, max number of retries reached, exitting ...", error=True)
+            sys.exit(1)
 
-    return True
+        # if successfully deployed, return no error message, and True
+        log(f"Successfully removed cloudstash with stage {stage}")
+        if config.VERBOSE:
+            log(f"(serverless remove stdout) {res.stdout}")
+
+        return True
+    else:
+        return False
 
 
 def find_apigateway_url(log_output: str) -> str:

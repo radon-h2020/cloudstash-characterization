@@ -72,6 +72,10 @@ def generate_artifact(
     cloudstash_repo: str,
     cloudstash_org: str,
 ) -> bool:
+    # use existing artifact if it exists
+    if os.path.isfile(artifact_name):
+        return True
+
     try:
         payload_file = "payload.txt"
         config_file = "config.ini"

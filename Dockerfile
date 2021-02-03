@@ -35,5 +35,5 @@ USER alpine
 
 WORKDIR /home/alpine/cloudstash-characterization/Benchmark
 
-ENTRYPOINT ["python3", "orchestrate_benchmark.py"]
+ENTRYPOINT ["python3", "-u", "orchestrate_benchmark.py"]
 CMD ["--help"]

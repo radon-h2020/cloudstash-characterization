@@ -41,8 +41,10 @@ cli_args = cli_args_parser.parse_args()
 # update config defaults
 if cli_args.verbose:
     config.VERBOSE = True
+    log("Verbose outputs enabled.")
 if cli_args.debug:
     config.DEBUG = True
+    log("Debug outputs enabled.")
 
 # load cli args into variables
 number_of_artefacts = cli_args.number_of_artefacts

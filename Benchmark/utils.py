@@ -13,7 +13,7 @@ config = GlobalConfig.get()
 def log(message: str, error: bool = False) -> None:
     # TODO write to a specific log file?
     #  timestamp = time.ctime()
-    timestamp = time.strftime("%Y-%d/%m-%H:%M:%S", time.localtime())
+    timestamp = time.strftime("%Y %d/%m %H:%M:%S", time.localtime())
     if error:
         print(f"{timestamp}|ERROR| {message}")
     else:

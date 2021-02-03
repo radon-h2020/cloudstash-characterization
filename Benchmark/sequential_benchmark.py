@@ -1,6 +1,8 @@
 import sys
 
 sys.path.append("../ArtifactGenerator")  # noqa
+import csv
+import uuid
 import time
 import json
 import shutil
@@ -31,48 +33,83 @@ def run_sequential_benchmark(benchmark: Benchmark):
     ###
     # Deploy cloudstash
     ###
+    log("----- Create Infrastructure")
 
     # deploy cloudstash using serverless, get the api gateway url of the deployment
-    #  gateway_url, deployed = deploy_cloudstash(benchmark.stage)
+    gateway_url, deployed = deploy_cloudstash(benchmark.stage)
     # set gateway_url in benchmark object
-    #  benchmark.gateway_url = gateway_url
-
-    benchmark.gateway_url = "https://gnr7g9tfj2.execute-api.eu-west-1.amazonaws.com/b018670f"
+    benchmark.gateway_url = gateway_url
 
     # make sure everything is ready before starting benchmark
-    #  log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
-    #  sleep(config.ORCHESTRATION_DELAY)
+    log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
+    sleep(config.ORCHESTRATION_DELAY)
 
     ###
     # Run the benchmark
     ###
+    log("----- Run Benchmark")
 
     # run benchmark
-    benchmark_sucess, report_file = run_benchmark(benchmark)
+    benchmark_sucess, benchmark_data = run_benchmark(benchmark)
 
-    # save when the experiment finished running
-    #  benchmark.log_experiment_stop_time()
+    #  save when the experiment finished running
+    benchmark.log_experiment_stop_time()
 
     ###
-    # Parse artillery output
+    # Parse benchmark output
     ###
-    #  parsed = parse_artillery_output(report_file)
+    log("----- Parse Benchmark results")
+
+    benchmark_output_file = (
+        f"{config.BENCHMARK_OUTPUT_PATH}/{benchmark.stage}-{benchmark.benchmark}-{benchmark.number_of_artefacts}.csv"
+    )
+    wrote_file = write_benchmark_results_csv_file(benchmark, benchmark_output_file, benchmark_data)
 
     ###
     # Teardown cloudstash instance
     ###
+    log("----- Remove Benchmark Infrastructure")
 
     # remove the cloudstash deployment
-    #  removed = remove_deployment(benchmark.stage)
+    removed = remove_deployment(benchmark.stage)
+
+    ###
+    # End Benchmark orchestration
+    ###
+    log("-----")
+    log(f"Benchmark orchestration finished.")
+    log(f"Benchmark running time: {benchmark.running_time}")
 
 
-def run_benchmark(benchmark: Benchmark) -> (bool, str):
-    #  username = "user1"
-    #  password = "password1"
-    import uuid
+def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str, results: list) -> bool:
+    log(f"Writing benchmark data to file: {results_filename}")
+    benchmark_data_fieldnames = [
+        "start_time",
+        "end_time",
+        "total_time",
+        "status_code",
+        "artifact_num",
+        "artifact_name",
+        "artifact_size",
+        "repository",
+        "user",
+    ]
+    with open(results_filename, "w") as csvfile:
+        csvfile_writer = csv.DictWriter(csvfile, fieldnames=benchmark_data_fieldnames)
+        csvfile_writer.writeheader()
+        for result in results:
+            csvfile_writer.writerow(result)
+        log("Done writing benchmark data.")
+        return True
+    return False
+
+
+def run_benchmark(benchmark: Benchmark) -> (bool, dict):
+    # list to hold benchmark results
+    results = []
 
     username = str(uuid.uuid4())[:8]
-    password = "password1"
+    password = "password"
     repository = f"{username}-benchmark-1"
     organization = username
 
@@ -85,19 +122,30 @@ def run_benchmark(benchmark: Benchmark) -> (bool, str):
     # Create one respository
     repo_created = cloudstash_create_repository(benchmark, session_token, repository)
 
-    # flush prints
-    sys.stdout.flush()
-
     if user_created and repo_created:
         # Execute the sequential load test
         # for the number of artifacts specified in benchmark:
         for i in range(0, benchmark.number_of_artefacts):
-            log(f"Processing request {i}")
-            success = cloudstash_upload_artifact(benchmark, i, deploy_token, repository, organization)
+            if config.VERBOSE:
+                log(f"Processing request #{i} ...")
+            # do some incremental logging
+            if i % 100 == 0:
+                log(f"Processing request #{i} ...")
 
-            # flush prints
-            sys.stdout.flush()
+            artifact_size = 100
 
-        # TODO
-        report_filename = ""
-        return True, report_filename
+            # make sure that we do not add the same benchmark_data multiple times
+            benchmark_data = None
+
+            # benchmark uploading an artifact
+            success, benchmark_data = cloudstash_upload_artifact(
+                benchmark, i, artifact_size, username, deploy_token, repository, organization
+            )
+
+            # save data from upload attempt
+            if benchmark_data is not None:
+                results.append(benchmark_data)
+
+        return (True, results)
+    else:
+        return (False, None)

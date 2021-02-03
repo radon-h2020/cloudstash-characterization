@@ -1,3 +1,6 @@
+**/payload.txt
+**/config.ini
+output
 artifacts
 logs/*
 **/__pycache__/*
