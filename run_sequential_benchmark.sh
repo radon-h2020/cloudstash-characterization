@@ -86,10 +86,7 @@ fi
 benchmark="sequential_upload"
 
 # how many artefacts to upload in the benchmark
-number_of_artefacts=10
-# number_of_artefacts=200
-# TODO change
-# number_of_artefacts=100000
+number_of_artefacts=100000
 
 # name of container
 container_name="$benchmark-$number_of_artefacts-$timestamp"
