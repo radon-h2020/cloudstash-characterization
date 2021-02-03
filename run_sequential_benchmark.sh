@@ -97,6 +97,12 @@ container_name="$benchmark-$number_of_artefacts-$timestamp"
 # logfile for container
 logfile="$log_dir/$container_name.log"
 
+docker_image="zanderhavgaard/cloudstash-characterization"
+docker_tag="latest"
+
+progress_msg "Pulling newest docker image ..."
+docker pull "$docker_image:$docker_tag"
+
 # create the docker cmd as a string that we can run in the background, but still pipe stdout to logfile
 if [[ $* = *--local* ]] ; then
     cmd="
@@ -108,7 +114,7 @@ if [[ $* = *--local* ]] ; then
         -v $local_dir:/home/alpine/cloudstash-characterization \
         -v $local_dir/artifacts:/home/alpine/artifacts \
         -v $local_dir/output:/home/alpine/output \
-        cc:latest \
+        $docker_image:$docker_tag \
         $benchmark $number_of_artefacts \
         > $logfile
     "
@@ -121,7 +127,7 @@ else
         -v /home/ubuntu/cloudstash/serverless:/home/alpine/serverless \
         -v /home/ubuntu/output:/home/alpine/output \
         -v /home/ubuntu/artifacts:/home/alpine/artifacts \
-        docker.pkg.github.com/radon-h2020/cloudstash-characterization/cloudstash-benchmarker:main
+        $docker_image:$docker_tag \
         $benchmark $number_of_artefacts \
         > $logfile
     "
