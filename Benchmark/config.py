@@ -23,9 +23,7 @@ class GlobalConfig:
         self.ARTILLERY_BIN_PATH = "/home/alpine/.npm-global/bin/artillery"
 
         # where to output artillery reports
-        # TODO change
-        #  ARTILLERY_OUTPUT_PATH = "/home/alpine/output"
-        self.BENCHMARK_OUTPUT_PATH = "../output"
+        ARTILLERY_OUTPUT_PATH = "/home/alpine/output"
 
         # path to generator artifact output folder and code
         self.GENERATOR_PATH = "/home/alpine/cloudstash-characterization/ArtifactGenerator"
@@ -50,6 +48,4 @@ class GlobalConfig:
         self.ORCHESTRATION_DELAY = 10
 
         # where to store generated artifacts
-        # TODO change
-        #  self.ARTIFACT_STORE_PATH = "/home/alpine/artifacts"
-        self.ARTIFACT_STORE_PATH = "../artifacts"
+        self.ARTIFACT_STORE_PATH = "/home/alpine/artifacts"
