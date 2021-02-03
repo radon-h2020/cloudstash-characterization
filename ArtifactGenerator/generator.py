@@ -45,7 +45,8 @@ def create_zip_archive(filename: str = "artifact.zip", files_to_be_zipped: list[
     with ZipFile(filename, "w") as zf:
         for _file in files_to_be_zipped:
             zf.write(_file)
-            os.remove(_file)
+            if not "config.ini" in _file:
+                os.remove(_file)
     print(f"Zip size: {os.stat(filename).st_size}")
 
 

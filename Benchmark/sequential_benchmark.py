@@ -64,27 +64,39 @@ def read_config(config_file):
 def upload_artifact(benchmark: Benchmark):
     zip_name = "artifact.zip"
 
-    log(f"Creating user to obtain deploy token...")
     # Create one user
+    log(f"Creating user to obtain deploy token...")
     payload = {}
     payload["username"] = "user"
     payload["password"] = "password"
     r = requests.post(
         f"{benchmark.gateway_url}/signup",
         json=payload,
-        headers={"content-type": "application/json"},  # global_config.endpoint,
+        headers={"content-type": "application/json"},
     )
     click.echo(r.status_code)
     message_str_split = r["message"].split(" ")  # extract from response
     user_token = message_str_split[len(message_str_split) - 1]  # take out last word of return message, should be token
     log(f"Obtained deploy token {user_token}")
 
+
     # Create one respository
+    log(f"Creating repository for user account...")
     cloudstash_repo = "benchmark"
+    payload = {}
+    payload["repository"] = cloudstash_repo
+    payload["repositoryType"] = "Artifact Repository" # Really not sure about these values. 
+    payload["repositoryAvailability"] = "public"
+    r = requests.post(
+        f"{benchmark.gateway_url}/repository",
+        json=payload,
+        headers={"content-type": "application/json", "Cookie": f"authtoken={user_token}"},
+    )
+    click.echo(r.status_code)
 
-    # post request
 
-    # for the number of artifacts specified in benchmark do:
+    # Execute the sequential load test
+    # for the number of artifacts specified in benchmark:
     for i in range(0, benchmark.number_of_artefacts):
         log(f"Processing request {i}")
 
@@ -97,7 +109,7 @@ def upload_artifact(benchmark: Benchmark):
         if returncode == 0:
             # upload artifact to cloudstash
 
-            artifact_config = read_config(global_config.configfile)
+            artifact_config = read_config("config.ini")
             payload = {}
             try:
                 payload["artifact_name"] = artifact_config.get("FUNCTION", "name")
@@ -118,7 +130,7 @@ def upload_artifact(benchmark: Benchmark):
                 )
 
                 r = requests.post(
-                    benchmark.gateway_url,
+                    f"{benchmark.gateway_url}/artifact",
                     json=payload,
                     headers={"content-type": "application/json", "Authorization": user_token}
                     if user_token
