@@ -1,5 +1,5 @@
 config:
-  target: "{{ $processEnvironment.gateway_url }}" #https://kt2nk7vgkg.execute-api.eu-west-1.amazonaws.com/testcn
+  target: "{{ $processEnvironment.gateway_url }}"
   http:
     # Responses have to be sent within 10 seconds or the request will be aborted
     timeout: 10
@@ -7,7 +7,7 @@ config:
     - duration: 10
       arrivalRate: 1
   payload:
-    # path is relative to the location of the test script 
+    # path is relative to the location of the test script
     path: "users.csv"
     fields:
       - "username"

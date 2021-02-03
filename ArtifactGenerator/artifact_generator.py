@@ -7,8 +7,14 @@ from zipfile import ZipFile
 
 seed(time.time())
 
+VERBOSE = False
+
 
 def create_payload(size: int = 4096, filename: str = "payload.txt") -> None:
+    # if payload file already exists, then delete it
+    if os.path.isfile(filename):
+        os.remove(filename)
+
     payload = ""
     for i in range(size):
         payload = payload + f"{randint(0, 9)}"
@@ -16,11 +22,16 @@ def create_payload(size: int = 4096, filename: str = "payload.txt") -> None:
     with open(filename, "w") as pf:
         pf.write(payload)
 
-    print("Payload size on disc: ", os.stat(filename).st_size)
-    print("Payload size as object in Python3 (with 49 bytes overhead, unicode string) ", sys.getsizeof(payload))
+    if VERBOSE:
+        print("Payload size on disc: ", os.stat(filename).st_size)
+        print("Payload size as object in Python3 (with 49 bytes overhead, unicode string) ", sys.getsizeof(payload))
 
 
 def create_cloudstash_config_file(cloudstash_org: str, cloudstash_repo: str, filename: str = "config.ini") -> None:
+    # if config file already exists, then delete it
+    if os.path.isfile(filename):
+        os.remove(filename)
+
     artifact_name = uuid.uuid4()
     artifact_version = uuid.uuid4()
     config_text = f"""
@@ -41,16 +52,53 @@ handler = handler"""
         cf.write(config_text)
 
 
-def create_zip_archive(filename: str = "artifact.zip", files_to_be_zipped: list[str] = []) -> None:
+def create_zip_archive(filename: str = "artifact.zip", files_to_be_zipped: list = []) -> None:
+    # if zipfile file already exists, then delete it
+    if os.path.isfile(filename):
+        os.remove(filename)
+
     with ZipFile(filename, "w") as zf:
         for _file in files_to_be_zipped:
             zf.write(_file)
-            os.remove(_file)
-    print(f"Zip size: {os.stat(filename).st_size}")
+            if not "config.ini" in _file:
+                os.remove(_file)
+    if VERBOSE:
+        print(f"Zip size: {os.stat(filename).st_size}")
+
+
+def generate_artifact(
+    artifact_size: int,
+    artifact_name: str,
+    cloudstash_repo: str,
+    cloudstash_org: str,
+) -> bool:
+    # use existing artifact if it exists
+    if os.path.isfile(artifact_name):
+        return True
+
+    try:
+        payload_file = "payload.txt"
+        config_file = "config.ini"
+
+        # create binary nonsense file to simulate function code
+        create_payload(size=artifact_size, filename=payload_file)
+        # create a cloudstash config file
+        create_cloudstash_config_file(
+            cloudstash_org=cloudstash_org, cloudstash_repo=cloudstash_repo, filename=config_file
+        )
+
+        files_to_be_zipped = [payload_file, config_file]
+        create_zip_archive(filename=artifact_name, files_to_be_zipped=files_to_be_zipped)
+        return True
+
+    except Exception as err:
+        print(f"Encountered an error creating artifact {artifact_name}, the error was: {err}")
+        return False
 
 
 # run as script from cli
 if __name__ == "__main__":
+    VERBOSE = True
     payload_file = "payload.txt"
     config_file = "config.ini"
     artifact_size = int(sys.argv[1]) if len(sys.argv) > 1 else 4096

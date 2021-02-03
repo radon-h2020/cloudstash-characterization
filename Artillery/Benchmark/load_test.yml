@@ -1,0 +1,63 @@
+config:
+  target: "{{ $processEnvironment.gateway_url }}"
+  http:
+    # Responses have to be sent within 10 seconds or the request will be aborted
+    timeout: 10
+  phases:
+    - duration: 10
+      arrivalRate: 1
+  payload:
+
+  # This is how data is loaded from multiple csv files in same test script
+
+  # need somewhere to store a user_token. Most likely environment vars
+  # Need csv with artifacts to GET (get artifact)
+  # Need csv with repositores to get all artifacts (list artifacts)
+  # Need csv with 'serialized' post request to Upload Artifacts
+    # "id, "
+
+  -
+    path: "./pets.csv"
+    fields:
+      - "species"
+      - "name"
+  -
+    path: "./urls.csv"
+    fields:
+      - "url"
+
+  -
+    path: "users.csv"
+    fields:
+      - "username"
+      - "password"
+    order: sequence
+    skipHeader: true
+
+
+
+### Endpoints to test against ###
+  # List functions
+  # Get function
+  # Upload functions
+
+scenarios:
+  - flow:
+    - get: # list artifacts
+        url: "/repository/{repo_id}"
+        json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+    
+    - get: # get artifact
+        url: "/artifact_download/{artifact_id}" # load from CSV
+        json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+
+    - post: # upload function
+        url: "/artifact"
+        json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+        gzip: true
