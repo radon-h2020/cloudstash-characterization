@@ -1,3 +1,5 @@
+import sys
+import os
 import seaborn
 import pandas
 from argparse import ArgumentParser
@@ -21,6 +23,11 @@ cli_args_parser.add_argument(
     default=".",
     help="Path to where to write plots, defaults to current directory",
 )
+cli_args_parser.add_argument(
+    "--only_print_data",
+    action="store_true",
+    help="Will print data as pandas dataframe for previewing that data is loaded correctly",
+)
 
 # parse the cli arguments
 cli_args = cli_args_parser.parse_args()
@@ -28,6 +35,11 @@ cli_args = cli_args_parser.parse_args()
 # load cli args into variables
 csv_file = cli_args.csv_file
 plots_path = cli_args.output_path
+only_print_data = cli_args.only_print_data
+
+if not os.path.isfile(csv_file):
+    print(f"Error: The file {csv_file} could not be found")
+    sys.exit(1)
 
 #  csv_file = "../output/0ebbd90c-sequential_upload-200.csv"
 print(f"Using .csv file {csv_file}")
@@ -36,10 +48,11 @@ print("Reading data ...")
 # read .csv file to pandas dataframe
 sequential_data = pandas.read_csv(csv_file)
 
-print(f"Writing plots to directory: {plots_path}")
+if only_print_data:
+    print(sequential_data)
+    sys.exit(0)
 
-# we can print the contents of the dataframe
-#  print(sequential_data)
+print(f"Writing plots to directory: {plots_path}")
 
 print("Creating sequential density plot ...")
 # shows distribution of Artifact upload times
