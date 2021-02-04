@@ -1,7 +1,7 @@
 resource "aws_instance" "orchestrator" {
   key_name      = aws_key_pair.ubuntu.key_name
   ami           = "ami-01996625fff6b8fcc"
-  instance_type = "t3.micro" # free-tier in Stockholm. t2 unavailable
+  instance_type = "t3.medium"
 
   tags = {
     Name = "cloudstash_characterization_orchestrator"
@@ -61,7 +61,7 @@ resource "null_resource" "orchestrator-provisioner" {
 
       # update system
       "sudo apt-get update -q",
-      "sudo apt-get upgrade -qq",
+      # "sudo apt-get upgrade -qq",
 
       # will install both docker and docker-compose
       "sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq moreutils docker-compose awscli gnupg2 pass",
