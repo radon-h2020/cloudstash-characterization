@@ -53,7 +53,7 @@ class GlobalConfig:
         # lower limit for artifact sizes in bytes
         self.ARTIFACT_SIZE_LOWER = 25000
         # upper limit for artifact sizes in bytes
-        self.ARTIFACT_SIZE_UPPER = 500000
+        self.ARTIFACT_SIZE_UPPER = 250000
 
         # seed to use for random operations
         self.RANDOM_SEED = 1
