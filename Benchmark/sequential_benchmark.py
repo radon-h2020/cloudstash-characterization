@@ -29,7 +29,7 @@ from cloudstash_api_wrapper import (
 config = GlobalConfig.get()
 
 # set random seed
-random.seed(1)
+random.seed(config.RANDOM_SEED)
 
 
 def run_sequential_benchmark(benchmark: Benchmark):

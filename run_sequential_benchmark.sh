@@ -82,11 +82,17 @@ fi
 [ ! -d "$output_dir" ] && progress_msg "Creating output directory ..." && mkdir -p "$output_dir"
 [ ! -d "$artifacts_dir" ] && progress_msg "Creating artifacts directory ..." && mkdir -p "$artifacts_dir"
 
+debug=""
+verbose=""
+[[ $* = *--debug* ]] && progress_msg "Enabling debug prints" && debug="--debug"
+[[ $* = *--verbose* ]] && progress_msg "Enabling verbose prints" && verbose="--verbose"
+
 # what benchmark to run
 benchmark="sequential_upload"
 
 # how many artefacts to upload in the benchmark
-number_of_artefacts=100000
+number_of_artefacts=10
+# number_of_artefacts=100000
 
 # name of container
 container_name="$benchmark-$number_of_artefacts-$timestamp"
@@ -112,7 +118,7 @@ if [[ $* = *--local* ]] ; then
         -v $local_dir/artifacts:/home/alpine/artifacts \
         -v $local_dir/output:/home/alpine/output \
         $docker_image:$docker_tag \
-        $benchmark $number_of_artefacts \
+        $debug $verbose $benchmark $number_of_artefacts \
         > $logfile
     "
 else

@@ -189,37 +189,48 @@ def cloudstash_upload_artifact(
 
             headers = {"content-type": "application/json", "Authorization": deploy_token}
 
+            endpoint_url = f"{benchmark.gateway_url}/artifact"
+
+            response = None
+
             start_time = time.time()
 
-            response = requests.post(
-                f"{benchmark.gateway_url}/artifact",
-                json=payload,
-                headers=headers,
-            )
+            try:
+                response = requests.post(
+                    endpoint_url,
+                    json=payload,
+                    headers=headers,
+                )
+            except Exception as err:
+                log(f"Encountered an error uploading artifact {artifact_num}, the error was: {err}", error=True)
 
             end_time = time.time()
             total_time = end_time - start_time
 
-            if config.VERBOSE:
-                log(f"Upload Artifact HTTP status code: {response.status_code}")
+            if response is not None:
+                if config.VERBOSE:
+                    log(f"Upload Artifact HTTP status code: {response.status_code}")
 
-            # dict containing data for the upload
-            benchmark_data = {
-                "start_time": start_time,
-                "end_time": end_time,
-                "total_time": total_time,
-                "status_code": response.status_code,
-                "artifact_num": artifact_num,
-                "artifact_name": artifact_zip_file,
-                "artifact_size": artifact_size,
-                "repository": repository,
-                "user": username,
-            }
+                # dict containing data for the upload
+                benchmark_data = {
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "total_time": total_time,
+                    "status_code": response.status_code,
+                    "artifact_num": artifact_num,
+                    "artifact_name": artifact_zip_file,
+                    "artifact_size": artifact_size,
+                    "repository": repository,
+                    "user": username,
+                }
 
-            if response.status_code == 200:
-                return (True, benchmark_data)
+                if response.status_code == 200:
+                    return (True, benchmark_data)
+                else:
+                    return (False, benchmark_data)
             else:
-                return (False, benchmark_data)
+                log("Something went wrong uploading artifact {artifact_num}, continueing ...", error=True)
+                return (False, None)
 
         except (KeyError, NoOptionError, requests.exceptions.RequestException) as err:
             log(f"Encountered an error trying to upload artifact #{artifact_num} error:{err}", error=True)

@@ -51,6 +51,9 @@ class GlobalConfig:
         self.ARTIFACT_STORE_PATH = "/home/alpine/artifacts"
 
         # lower limit for artifact sizes in bytes
-        self.ARTIFACT_SIZE_LOWER = 2500
+        self.ARTIFACT_SIZE_LOWER = 10000
         # upper limit for artifact sizes in bytes
-        self.ARTIFACT_SIZE_UPPER = 10000
+        self.ARTIFACT_SIZE_UPPER = 1000000
+
+        # seed to use for random operations
+        self.RANDOM_SEED = 1
