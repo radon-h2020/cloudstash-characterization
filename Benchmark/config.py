@@ -34,7 +34,7 @@ class GlobalConfig:
         # enable more prints
         self.VERBOSE = False
 
-        # how many tome to retry cloudstash deployment/teardown
+        # how many times to retry cloudstash deployment/teardown
         self.RETRIES = 10
 
         # the delay between cloudstash deployment/teardown attempts in seconds
@@ -51,9 +51,9 @@ class GlobalConfig:
         self.ARTIFACT_STORE_PATH = "/home/alpine/artifacts"
 
         # lower limit for artifact sizes in bytes
-        self.ARTIFACT_SIZE_LOWER = 10000
+        self.ARTIFACT_SIZE_LOWER = 25000
         # upper limit for artifact sizes in bytes
-        self.ARTIFACT_SIZE_UPPER = 1000000
+        self.ARTIFACT_SIZE_UPPER = 500000
 
         # seed to use for random operations
         self.RANDOM_SEED = 1
