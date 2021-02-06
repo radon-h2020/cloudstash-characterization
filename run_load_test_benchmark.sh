@@ -82,16 +82,26 @@ fi
 [ ! -d "$output_dir" ] && progress_msg "Creating output directory ..." && mkdir -p "$output_dir"
 [ ! -d "$artifacts_dir" ] && progress_msg "Creating artifacts directory ..." && mkdir -p "$artifacts_dir"
 
+debug=""
+verbose=""
+[[ $* = *--debug* ]] && progress_msg "Enabling debug prints" && debug="--debug"
+[[ $* = *--verbose* ]] && progress_msg "Enabling verbose prints" && verbose="--verbose"
+
 # what benchmark to run
 benchmark="load_test"
 
 # how many artefacts to upload in the benchmark
-artefact_intervals="
-0
-1000
-10000
-100000
-"
+# must be given as the first argument
+number_of_artefacts=$1
+
+# check that the first argument is an interger, and exit otherwise
+# everything is strings in bash, so we use regex to make that the first
+# argument can be matched to regex looking for an integer
+check_number_reges="^[0-9]+$"
+if ! [[ $number_of_artefacts =~ $check_number_reges ]] ; then
+    error_msg "Error: First argument must be an integer."
+    exit 1
+fi
 
 # name of container
 container_name="$benchmark-$number_of_artefacts-$timestamp"
@@ -117,7 +127,7 @@ if [[ $* = *--local* ]] ; then
         -v $local_dir/artifacts:/home/alpine/artifacts \
         -v $local_dir/output:/home/alpine/output \
         $docker_image:$docker_tag \
-        $benchmark $number_of_artefacts \
+        $debug $verbose $benchmark $number_of_artefacts \
         > $logfile
     "
 else
@@ -130,7 +140,7 @@ else
         -v /home/ubuntu/output:/home/alpine/output \
         -v /home/ubuntu/artifacts:/home/alpine/artifacts \
         $docker_image:$docker_tag \
-        $benchmark $number_of_artefacts \
+        $debug $verbose $benchmark $number_of_artefacts \
         > $logfile
     "
 fi
@@ -145,10 +155,7 @@ progress_msg "Benchmark will run in container: $container_name"
 progress_msg "Benchmark logs will be written to: $logfile"
 
 # run the benchmark container as a background process
-if [[ $* = *--local* ]] ; then 
-    bash -c "$cmd" &
-else
-fi
+bash -c "$cmd" &
 
 success_msg "Container started."
 progress_msg "This may take some time to finish ..."

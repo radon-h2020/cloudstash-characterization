@@ -91,7 +91,17 @@ verbose=""
 benchmark="sequential_upload"
 
 # how many artefacts to upload in the benchmark
-number_of_artefacts=100000
+# must be given as the first argument
+number_of_artefacts=$1
+
+# check that the first argument is an interger, and exit otherwise
+# everything is strings in bash, so we use regex to make that the first
+# argument can be matched to regex looking for an integer
+check_number_reges="^[0-9]+$"
+if ! [[ $number_of_artefacts =~ $check_number_reges ]] ; then
+    error_msg "Error: First argument must be an integer."
+    exit 1
+fi
 
 # name of container
 container_name="$benchmark-$number_of_artefacts-$timestamp"
@@ -130,7 +140,7 @@ else
         -v /home/ubuntu/output:/home/alpine/output \
         -v /home/ubuntu/artifacts:/home/alpine/artifacts \
         $docker_image:$docker_tag \
-        $benchmark $number_of_artefacts \
+        $debug $verbose $benchmark $number_of_artefacts \
         > $logfile
     "
 fi

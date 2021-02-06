@@ -33,7 +33,6 @@ random.seed(config.RANDOM_SEED)
 
 
 def run_sequential_benchmark(benchmark: Benchmark):
-
     ###
     # Deploy cloudstash
     ###
