@@ -21,6 +21,14 @@ config = GlobalConfig.get()
 # set random seed
 random.seed(config.RANDOM_SEED)
 
+def CreateArtifacts(threads: int, num_users: int, 
+        num_repos: int, num_artifacts: int):
+
+    log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos}...")
+
+    
+
+
 def CreateRepositories(num: int, benchmark: Benchmark):
     header = "repository\n"
     csv = f"{header}"
@@ -94,13 +102,16 @@ def EnsurePathCreated(path: str):
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
 
-    # Write out some meta on benchmark params?
+    # TODO: Write out some meta on benchmark params?
 
-
-    # list to hold benchmark results
-    # results = []
-    base_path = "/home/alpine/artifacts/B2" # TODO: Ensure created
+    results = [] # list to hold benchmark results
+    base_path = "/home/alpine/artifacts/B2"
     EnsurePathCreated(base_path)
+
+    num_users = 10
+    num_repos = 10
+    num_artifacts = 100
+    num_upload_threads = 10
 
     user_filename = "created_users.csv"
     repo_filename = "created_repositories.csv"
@@ -117,7 +128,6 @@ def run_benchmark(benchmark: Benchmark) -> (bool, dict):
         # start 10 threads, 1 thread uploads to one repo
             # if too slow, up to 10 threads per repo
             # file names are predicable
-
         # Test with 10, 100, 1000
         # Benchmark with 1000, 10000, 100.000
 
@@ -128,3 +138,9 @@ def run_benchmark(benchmark: Benchmark) -> (bool, dict):
         # curl https://cloudstash.io/repository/48ce911ec127539ad841688ed5a34f | jq
         # curl https://cloudstash.io/repository/48ce911ec127539ad841688ed5a34f/artifact/aws\.python3\.8/snyk\_test | jq
 
+    WriteToFile(CreateArtifacts
+        (num_upload_threads, 
+        num_users, 
+        num_repos, 
+        num_artifacts), 
+        f"{base_path}/{repo_filename}")

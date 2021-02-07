@@ -45,15 +45,21 @@ scenarios:
   - flow:
     - get: # list artifacts
         url: "/repository/{repo_id}"
+        cookie:
+          : 
         json:
             username: "{{ username }}"
             password: "{{ password }}"
-    
+
+
     - get: # get artifact
         url: "/artifact_download/{artifact_id}" # load from CSV
+        cookie:
+          saved: 
         json:
             username: "{{ username }}"
             password: "{{ password }}"
+
 
     - post: # upload function
         url: "/artifact"
@@ -61,3 +67,4 @@ scenarios:
             username: "{{ username }}"
             password: "{{ password }}"
         gzip: true
+
