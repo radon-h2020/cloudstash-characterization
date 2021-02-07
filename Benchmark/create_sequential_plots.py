@@ -69,6 +69,17 @@ sequential_http_status_code = seaborn.countplot(data=sequential_data, x="status_
 sequential_http_status_code.set(
     xlabel="Artifact upload HTTP staus code", title="Sequential Artifacts Uploads HTTP Status Codes Received"
 )
+
+for i, bar in enumerate(sequential_http_status_code.patches):
+    h = bar.get_height()
+    sequential_http_status_code.text(
+        i,
+        h + 2000,
+        f"{int(h)}",
+        ha="center",
+        va="center",
+    )
+
 sequential_http_status_code.figure.savefig(f"{plots_path}/sequential_http_status_code.png")
 sequential_http_status_code.figure.clf()
 

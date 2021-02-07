@@ -87,14 +87,22 @@ To alleviate these difficulties, great care should be taken when designing bench
 <!-- #### s3 -->
 
 ## Designing Benchmarks for Scalability
-Earlier in the text we put forward the assumption that due to the serverless nature of the system, the performance should be the same, irrgard
-
+Earlier in the text we put forward the assumption that due to the serverless nature of the system, the performance and the availability should be the same, irregardless of how many functions are actually stored in the cloudstash instance being tested.
+Thus we design two benchmarks to attempt to verify this assumption:
 
 <!-- The assumption is that if the system scales well, then the response time should not change as we store more and more artifacts, as well as that all requests are handled correctly, no matter how many artifacts are stored in the platform. -->
 
 ### Benchmark 1: Sequential Artifact Uploads
 
+The first of the two benchmarks is the `Sequential Artifact Upload` benchmark.
+In this benchmark we sequentially upload a number of artifacts to a cloudstash instance, and record the response time of the upload request, as well as the HTTP response code.
+The maximum number of artifacts to be uploaded is 100000.
+This benchmarks thus verifies that 100000 artifacts can be uploaded to the platform, and that the behaviour of platform should ideally be consisten across all of function uploads.
+
+
 ### Benchmark 2: Load Test
+
+Christoffer TODO
 
 
 # Benchmarking Setup
