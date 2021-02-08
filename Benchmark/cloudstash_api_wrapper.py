@@ -7,6 +7,8 @@ from benchmark import Benchmark
 from artifact_generator import generate_artifact
 from utils import shell, log
 from config import GlobalConfig
+import os.path
+from os import path
 
 # get config singleton
 config = GlobalConfig.get()
@@ -136,7 +138,7 @@ def cloudstash_upload_artifact(
     username: str,
     deploy_token: str,
     repository: str,
-    org: str,
+    org: str
 ) -> True:
 
     artifact_zip_file = f"{artifact_num}_artifact.zip"
@@ -145,16 +147,19 @@ def cloudstash_upload_artifact(
     # if artifact has already been created, existing artifact will be used
     # retry up to 5 times to generate artifact
     for _ in range(0, 5):
-        generated_artifact = generate_artifact(
-            artifact_size=artifact_size,
-            artifact_name=artifact_filename,
-            cloudstash_repo=repository,
-            cloudstash_org=org,
-        )
-        if generated_artifact:
-            break
 
-        if generated_artifact:
+        artifact_created = path.exists(artifact_filename)
+        if not artifact_created:
+            artifact_created = generate_artifact(
+                artifact_size=artifact_size,
+                artifact_name=artifact_filename,
+                cloudstash_repo=repository,
+                cloudstash_org=org,
+            )
+            if artifact_created:
+                break
+
+        if artifact_created:
             # upload artifact to cloudstash
             artifact_config = read_config("config.ini")
             payload = {}
@@ -169,15 +174,7 @@ def cloudstash_upload_artifact(
                 payload["handler"] = artifact_config.get("RUNTIME", "handler")
                 payload["applicationToken"] = deploy_token
 
-                #  with open(artifact_filename, "rb") as binfile:
-                #  encoded = binfile.read()
-                #  payload["file"] = encoded.decode("utf-8")
-
-                #  with open(artifact_filename, "rb") as binfile:
-                #  bytesAsString = binfile.read().decode("utf-8")
-                #  payload["file"] = base64.b64encode(bytesAsString)
-
-                # TODO what is going on here ??? Taken from Functionhub-cli, we didn't write this but it breaks otherwise
+                # TODO what is going on here ??? Taken from Functionhub-Cli
                 with open(artifact_filename, "rb") as binfile:
                     encoded = base64.b64encode(binfile.read())
                 payload["file"] = encoded.decode()
