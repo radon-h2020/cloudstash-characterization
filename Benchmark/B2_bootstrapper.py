@@ -28,24 +28,24 @@ config = GlobalConfig.get()
 random.seed(config.RANDOM_SEED)
 
 # Multithreaded payload function
-def UploadSingleArtifact(i: int, num_users: int, num_repos: int, benchmark: Benchmark, deploy_tokens: list):
-    logging.info("Thread %s: starting", i)
+def UploadSingleArtifact(index: int, num_users: int, num_repos: int, benchmark: Benchmark, deploy_tokens: list):
+    logging.info("Thread %s: starting", index)
     
     artifact_size = random.randint(
             config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
-    u_num = i % num_users
+    u_num = index % num_users
     username = f"user{u_num}"
-    r_num = i % num_repos
+    r_num = index % num_repos
     repository = f"{r_num}"
     organization = username
 
     stop = False
-    num = i % num_users
+    num = index % num_users
     while stop == False: # continue to all artifacts have been created. We need a certain state
         success, _ = cloudstash_upload_artifact(
             benchmark,
-            i,
+            index,
             artifact_size,
             username,
             deploy_tokens[num],
