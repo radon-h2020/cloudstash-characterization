@@ -27,7 +27,7 @@ config = GlobalConfig.get()
 # set random seed
 random.seed(config.RANDOM_SEED)
 
-
+# Multithreaded payload function
 def UploadSingleArtifact(i: int, num_users: int, num_repos: int, benchmark: Benchmark, deploy_tokens: list):
     logging.info("Thread %s: starting", i)
     
@@ -56,7 +56,7 @@ def UploadSingleArtifact(i: int, num_users: int, num_repos: int, benchmark: Benc
 
     logging.info("Thread %s: finishing", i)
 
-def UploadArtifactsConcurrently(threads: int, num_users: int, deploy_tokens: list,
+def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
         num_repos: int, num_artifacts: int, benchmark: Benchmark):
 
     csv_header = f"id\n"
@@ -70,11 +70,11 @@ def UploadArtifactsConcurrently(threads: int, num_users: int, deploy_tokens: lis
     threads = []
     for i in range(0, num_artifacts):
         logging.info("Main    : before creating thread")
-        x = threading.Thread(target=UploadSingleArtifact, 
+        t = threading.Thread(target=UploadSingleArtifact, 
             args=(i,num_users, num_repos, benchmark, deploy_tokens))
         logging.info("Main    : before running thread")
-        x.start()
-        threads.append(x)
+        t.start()
+        threads.append(t)
 
     logging.info("Main    : wait for the thread to finish")
     for t in threads:
@@ -263,7 +263,7 @@ def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
     # Apply preconditions (Multithreaded B1)
     WriteToFile(UploadArtifactsConcurrently
         (
-            num_upload_threads, 
+            # num_upload_threads, 
             num_users, 
             deploy_tokens,
             num_repos, 
