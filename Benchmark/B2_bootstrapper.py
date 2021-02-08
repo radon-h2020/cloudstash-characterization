@@ -28,24 +28,27 @@ config = GlobalConfig.get()
 random.seed(config.RANDOM_SEED)
 
 
-def UploadSingleArtifact(i, num_users, num_repos, benchmark, deploy_tokens):
+def UploadSingleArtifact(i: int, num_users: int, num_repos: int, benchmark: Benchmark, deploy_tokens: list):
     logging.info("Thread %s: starting", i)
     
     artifact_size = random.randint(
             config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
-    username = f"user{i%num_users}"
-    repository = f"repo{i%num_repos}"
+    u_num = i % num_users
+    username = f"user{u_num}"
+    r_num = i % num_repos
+    repository = f"{r_num}"
     organization = username
 
     stop = False
+    num = i % num_users
     while stop == False: # continue to all artifacts have been created. We need a certain state
         success, _ = cloudstash_upload_artifact(
             benchmark,
             i,
             artifact_size,
             username,
-            deploy_tokens[i%num_users],
+            deploy_tokens[num],
             repository,
             organization
         )
