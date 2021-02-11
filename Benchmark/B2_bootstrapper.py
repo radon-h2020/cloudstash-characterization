@@ -28,7 +28,14 @@ config = GlobalConfig.get()
 random.seed(config.RANDOM_SEED)
 
 # Multithreaded payload function
-def UploadSingleArtifact(index: int, num_users: int, num_repos: int, benchmark: Benchmark, deploy_tokens: list):
+def UploadSingleArtifact(
+        index: int,
+        num_users: int,
+        num_repos: int,
+        benchmark: Benchmark,
+        deploy_tokens: list
+    ):
+    
     logging.info("Thread %s: starting", index)
     
     artifact_size = random.randint(
@@ -37,7 +44,7 @@ def UploadSingleArtifact(index: int, num_users: int, num_repos: int, benchmark: 
     u_num = index % num_users
     username = f"user{u_num}"
     r_num = index % num_repos
-    repository = f"{r_num}"
+    repository = f"repo{r_num}"
     organization = username
 
     stop = False
@@ -54,7 +61,7 @@ def UploadSingleArtifact(index: int, num_users: int, num_repos: int, benchmark: 
         )
         stop = success
 
-    logging.info("Thread %s: finishing", i)
+    logging.info("Thread %s: finishing", index)
 
 def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
         num_repos: int, num_artifacts: int, benchmark: Benchmark):
@@ -71,7 +78,7 @@ def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
     for i in range(0, num_artifacts):
         logging.info("Main    : before creating thread")
         t = threading.Thread(target=UploadSingleArtifact, 
-            args=(i,num_users, num_repos, benchmark, deploy_tokens))
+            args=(i, num_users, num_repos, benchmark, deploy_tokens))
         logging.info("Main    : before running thread")
         t.start()
         threads.append(t)
@@ -124,8 +131,8 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int):
                 names.append(obj['artifact_name'])
         else:
             log(
-                f"Repository creation failed for repository{i}, waiting {config.RETRY_DELAY}s before trying again.",
-                error=True,
+                f"Repository creation failed for repository{repository_id}, waiting {config.RETRY_DELAY}s before trying again.",
+                error=True
             )
             time.sleep(config.RETRY_DELAY)
 
