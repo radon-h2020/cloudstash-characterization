@@ -58,7 +58,7 @@ print("Creating sequential density plot ...")
 # shows distribution of Artifact upload times
 sequential_time_density = seaborn.kdeplot(data=sequential_data, x="total_time")
 sequential_time_density.set(
-    xlabel="Artifact Upload Time (Seconds)", title="Sequential Uploads Density of Artifact Upload Timigs"
+    xlabel="Artifact Upload Time (Seconds)", title="Sequential Uploads Density of Artifact Upload Timings"
 )
 sequential_time_density.figure.savefig(f"{plots_path}/sequential_time_density.png")
 sequential_time_density.figure.clf()
