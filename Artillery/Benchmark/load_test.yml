@@ -21,7 +21,7 @@ config:
   -
     path: "/home/alpine/artifacts/B2/created_repositories.csv"
     fields:
-      - "repository"
+      - "repo_id"
       - "user"
     order: sequence
     skipHeader: true
@@ -49,18 +49,20 @@ scenarios:
     - get: # list artifacts
         url: "/repository/{repo_id}"
         cookie:
-          - authtoken: session_token
+          - authtoken=: session_token
 
+  - flow:
     - get: # get artifact
         url: "/artifact_download/{artifact_id}" # load from CSV
         # accourding to code for function the 'security' is implemented 
         #to get the id, not enforced on retrieval
-
+  
+  - flow:
     - post: # upload function
         url: "/artifact"
         json:
             Authorization: "{{ deploy_token }}"
             # applicationToken: "{{ deploy_token }}"
-
-        gzip: true
+        body: "{{ artifact_data }}"
+        # gzip: true
 

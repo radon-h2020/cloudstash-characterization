@@ -82,4 +82,5 @@ def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
     # def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> Tuple[bool, dict]:
     run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
 
-    pass
+    return(True, [])
+    # pass

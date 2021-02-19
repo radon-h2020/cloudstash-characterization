@@ -29,30 +29,30 @@ random.seed(config.RANDOM_SEED)
 
 # Multithreaded payload function
 def UploadSingleArtifact(
-    index: int,
+    index_i: int,
     num_users: int,
     num_repos: int,
     benchmark: Benchmark,
     deploy_tokens: list
 ) -> str:
 
-    logging.info("Thread %s: starting", index)
+    logging.info("Thread %s: starting", index_i)
     
     artifact_size = random.randint(
             config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
-    u_num = index % num_users
+    u_num = index_i % num_users
     username = f"user{u_num}"
-    r_num = index % num_repos
+    r_num = index_i % num_repos
     repository = f"repo{r_num}"
     organization = username
 
     stop = False
-    num = index % num_users
+    num = index_i % num_users
     while stop == False: # continue to all artifacts have been created. We need a certain state
         success, benchmark_obj = cloudstash_upload_artifact(
             benchmark,
-            index,
+            index_i,
             artifact_size,
             username,
             deploy_tokens[num],
@@ -63,9 +63,8 @@ def UploadSingleArtifact(
 
         if success == True:
             artifact_data = benchmark_obj["artifact_raw_data"]
-
-
-    logging.info("Thread %s: finishing", index)
+            logging.info("Thread %s: finishing", index_i)
+            return artifact_data
 
 def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
         num_repos: int, num_artifacts: int, benchmark: Benchmark):
@@ -106,10 +105,10 @@ def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
             artifact_ids.append(GetArtifactId(benchmark, repo_id, a_name))
 
     for id in artifact_ids:
-        csv_ids = f"{csv_ids}{id}\n"
+        csv_ids = f"{csv_ids}{id},\n"
 
     for data in generated_artifacts:
-        csv_artifacts = f"{csv_artifacts}{id}\n"
+        csv_artifacts = f"{csv_artifacts}{data},\n"
 
     return (csv_ids, csv_artifacts)
 
@@ -126,8 +125,8 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
         return obj['artifactId']
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int):
-    names = []
     log(f"Listing artifacts to obtain artifact names")
+    names = []
     endpoint_url = f"{benchmark.gateway_url}/publicrepository\?repoType\=Function"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
@@ -172,7 +171,7 @@ def GetRepositorieIds(benchmark: Benchmark):
     return ids
 
 def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: Benchmark):
-    header = "repository, user\n"
+    header = "repo_id, user\n"
     csv = header
     log(f"Creating {num_repos} repositoires split amongst {num_users} users...")
     for i in range(0, num_repos):
