@@ -1,12 +1,13 @@
 import time
 from utils import shell, log
 from config import GlobalConfig
+from typing import Tuple
 
 # get config singleton
 config = GlobalConfig.get()
 
 
-def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> (bool, str):
+def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> Tuple[bool, dict]:
     log(f"Running Artillery with script {script_file}")
 
     # output report timestamp

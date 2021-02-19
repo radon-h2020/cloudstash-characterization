@@ -97,11 +97,11 @@ def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
     logging.info("Main    : all artifacts uploaded")
 
     repo_ids = GetRepositorieIds(benchmark)
-    artifact_names = dict
+    artifact_names = dict()
     artifact_ids = []
 
     for id in repo_ids:
-        artifact_names[id](GetArtifactNames(benchmark, id))
+        artifact_names[id] = GetArtifactNames(benchmark, id)
         for (repo_id, a_name) in artifact_names:
             artifact_ids.append(GetArtifactId(benchmark, repo_id, a_name))
 
@@ -248,7 +248,7 @@ def WriteToFile(csv: str, filepath: str):
 def EnsurePathCreated(path: str):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
+def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     # TODO: Write out some meta on precondition params?
 
@@ -294,7 +294,5 @@ def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
     WriteToFile(datas, 
         f"{base_path}/{artifact_datas_filename}"
     )
-
-    # TODO: Start Artillery from this script. Wait response from Zander
 
     return(True, [])
