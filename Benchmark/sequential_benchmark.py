@@ -10,6 +10,7 @@ import errno
 import base64
 import os
 import random
+from typing import Tuple
 from time import sleep
 from artillery_report_parser import parse_artillery_output
 from benchmark import Benchmark
@@ -109,7 +110,7 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
     return False
 
 
-def run_benchmark(benchmark: Benchmark) -> (bool, dict):
+def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
     # list to hold benchmark results
     results = []
 

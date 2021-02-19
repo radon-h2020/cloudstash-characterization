@@ -2,6 +2,7 @@ import sys
 import requests
 import base64
 import time
+from typing import Tuple
 from configparser import Error as configparser_error, NoOptionError, ConfigParser
 from benchmark import Benchmark
 from artifact_generator import generate_artifact
@@ -13,8 +14,17 @@ from os import path
 # get config singleton
 config = GlobalConfig.get()
 
+def read_config(config_file):
+    try:
+        config = ConfigParser()
+        config.read(config_file)
+        return config
+    except configparser_error as e:
+        log("Error reading artifact config file.", error=True)
+        raise e
 
-def cloudstash_create_user(benchmark: Benchmark, username: str, password: str) -> (bool, str):
+
+def cloudstash_create_user(benchmark: Benchmark, username: str, password: str) -> Tuple[bool, str]:
     log(f"Creating user {username} to obtain deploy token...")
 
     payload = {
@@ -53,7 +63,7 @@ def cloudstash_create_user(benchmark: Benchmark, username: str, password: str) -
             return (False, None)
 
 
-def cloudstash_login_user(benchmark: Benchmark, username: str, password: str) -> (bool, str):
+def cloudstash_login_user(benchmark: Benchmark, username: str, password: str) -> Tuple[bool, str]:
     log(f"Logging in user {username} to obtain session token.")
     endpoint_url = f"{benchmark.gateway_url}/login"
     payload = {
@@ -121,16 +131,6 @@ def cloudstash_create_repository(benchmark: Benchmark, session_token: str, repos
     return True
 
 
-def read_config(config_file):
-    try:
-        config = ConfigParser()
-        config.read(config_file)
-        return config
-    except configparser_error as e:
-        log("Error reading artifact config file.", error=True)
-        raise e
-
-
 def cloudstash_upload_artifact(
     benchmark: Benchmark,
     artifact_num: int,
@@ -147,7 +147,6 @@ def cloudstash_upload_artifact(
     # if artifact has already been created, existing artifact will be used
     # retry up to 5 times to generate artifact
     for _ in range(0, 5):
-
         artifact_created = path.exists(artifact_filename)
         if not artifact_created:
             artifact_created = generate_artifact(
@@ -183,11 +182,8 @@ def cloudstash_upload_artifact(
                     log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
                 headers = {"content-type": "application/json", "Authorization": deploy_token}
-
                 endpoint_url = f"{benchmark.gateway_url}/artifact"
-
                 response = None
-
                 start_time = time.time()
 
                 try:
@@ -217,6 +213,7 @@ def cloudstash_upload_artifact(
                         "artifact_size": artifact_size,
                         "repository": repository,
                         "user": username,
+                        "artifact_raw_data": payload["file"]
                     }
 
                     if response.status_code == 200:

@@ -29,13 +29,13 @@ random.seed(config.RANDOM_SEED)
 
 # Multithreaded payload function
 def UploadSingleArtifact(
-        index: int,
-        num_users: int,
-        num_repos: int,
-        benchmark: Benchmark,
-        deploy_tokens: list
-    ):
-    
+    index: int,
+    num_users: int,
+    num_repos: int,
+    benchmark: Benchmark,
+    deploy_tokens: list
+) -> str:
+
     logging.info("Thread %s: starting", index)
     
     artifact_size = random.randint(
@@ -50,7 +50,7 @@ def UploadSingleArtifact(
     stop = False
     num = index % num_users
     while stop == False: # continue to all artifacts have been created. We need a certain state
-        success, _ = cloudstash_upload_artifact(
+        success, benchmark_obj = cloudstash_upload_artifact(
             benchmark,
             index,
             artifact_size,
@@ -61,13 +61,19 @@ def UploadSingleArtifact(
         )
         stop = success
 
+        if success == True:
+            artifact_data = benchmark_obj["artifact_raw_data"]
+
+
     logging.info("Thread %s: finishing", index)
 
 def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
         num_repos: int, num_artifacts: int, benchmark: Benchmark):
-
-    csv_header = f"id\n"
-    csv = csv_header
+    generated_artifacts = []
+    csv_header_ids = f"artifact_id\n"
+    csv_ids = csv_header_ids
+    csv_header_ids = f"artifact_data\n"
+    csv_artifacts = csv_header_ids
     log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos}...")
 
     format = "%(asctime)s: %(message)s"
@@ -85,7 +91,8 @@ def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
 
     logging.info("Main    : wait for the thread to finish")
     for t in threads:
-        t.join()
+        artifact_raw_data = t.join()
+        generated_artifacts.append(artifact_raw_data)
 
     logging.info("Main    : all artifacts uploaded")
 
@@ -99,9 +106,12 @@ def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
             artifact_ids.append(GetArtifactId(benchmark, repo_id, a_name))
 
     for id in artifact_ids:
-        csv = f"{csv}{id}\n"
+        csv_ids = f"{csv_ids}{id}\n"
 
-    return csv
+    for data in generated_artifacts:
+        csv_artifacts = f"{csv_artifacts}{id}\n"
+
+    return (csv_ids, csv_artifacts)
 
 def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
     log(f"Listing artifacts to obtain artifact ids")
@@ -252,7 +262,8 @@ def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     user_filename = "created_users.csv"
     repo_filename = "created_repositories.csv"
-    artifact_ids_filename = "created_artifacts.csv"
+    artifact_ids_filename = "created_artifact_ids.csv"
+    artifact_datas_filename = "created_artifact_datas.csv"
 
     (user_csv, session_tokens, deploy_tokens) = CreateUsers(num_users, benchmark)
     WriteToFile(user_csv, f"{base_path}/{user_filename}")
@@ -268,15 +279,22 @@ def run_benchmark(benchmark: Benchmark) -> Tuple[bool, dict]:
     )
 
     # Apply preconditions (Multithreaded B1)
-    WriteToFile(UploadArtifactsConcurrently
-        (
-            # num_upload_threads, 
-            num_users, 
-            deploy_tokens,
-            num_repos, 
-            num_artifacts
-        ), 
+    (ids, datas) = UploadArtifactsConcurrently(
+        # num_upload_threads, 
+        num_users, 
+        deploy_tokens,
+        num_repos, 
+        num_artifacts
+    )
+
+    WriteToFile(ids, 
         f"{base_path}/{artifact_ids_filename}"
     )
+
+    WriteToFile(datas, 
+        f"{base_path}/{artifact_datas_filename}"
+    )
+
+    # TODO: Start Artillery from this script. Wait response from Zander
 
     return(True, [])

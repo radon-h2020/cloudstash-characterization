@@ -9,31 +9,34 @@ config:
   payload:
 
   # This is how data is loaded from multiple csv files in same test script
-
-  # need somewhere to store a user_token. Most likely environment vars
-  # Need csv with artifacts to GET (get artifact)
-  # Need csv with repositores to get all artifacts (list artifacts)
-  # Need csv with 'serialized' post request to Upload Artifacts
-    # "id, "
-
   -
-    path: "./pets.csv"
-    fields:
-      - "species"
-      - "name"
-  -
-    path: "./urls.csv"
-    fields:
-      - "url"
-
-  -
-    path: "users.csv"
+    path: "/home/alpine/artifacts/B2/created_users.csv"
     fields:
       - "username"
       - "password"
+      - "session_token"
+      - "deploy_token"
     order: sequence
     skipHeader: true
-
+  -
+    path: "/home/alpine/artifacts/B2/created_repositories.csv"
+    fields:
+      - "repository"
+      - "user"
+    order: sequence
+    skipHeader: true
+  -
+    path: "/home/alpine/artifacts/B2/created_artifact_ids.csv"
+    fields:
+      - "artifact_id"
+    order: sequence
+    skipHeader: true
+  -
+    path: "/home/alpine/artifacts/B2/created_artifact_datas.csv"
+    fields:
+      - "artifact_data"
+    order: sequence
+    skipHeader: true
 
 
 ### Endpoints to test against ###
@@ -46,25 +49,18 @@ scenarios:
     - get: # list artifacts
         url: "/repository/{repo_id}"
         cookie:
-          : 
-        json:
-            username: "{{ username }}"
-            password: "{{ password }}"
-
+          - authtoken: session_token
 
     - get: # get artifact
         url: "/artifact_download/{artifact_id}" # load from CSV
-        cookie:
-          saved: 
-        json:
-            username: "{{ username }}"
-            password: "{{ password }}"
-
+        # accourding to code for function the 'security' is implemented 
+        #to get the id, not enforced on retrieval
 
     - post: # upload function
         url: "/artifact"
         json:
-            username: "{{ username }}"
-            password: "{{ password }}"
+            Authorization: "{{ deploy_token }}"
+            # applicationToken: "{{ deploy_token }}"
+
         gzip: true
 
