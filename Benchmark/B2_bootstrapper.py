@@ -12,6 +12,7 @@ from pathlib import Path
 import logging
 import threading
 import time
+from typing import Tuple
 
 from cloudstash_api_wrapper import (
     cloudstash_create_user,
@@ -64,8 +65,14 @@ def UploadSingleArtifact(
             logging.info("Thread %s: finishing", index_i)
             return artifact_data
 
-def UploadArtifactsConcurrently(num_users: int, deploy_tokens: list,
-        num_repos: int, num_artifacts: int, benchmark: Benchmark):
+def UploadArtifactsConcurrently(
+    num_threads: int, 
+    num_users: int, 
+    deploy_tokens: list,
+    num_repos: int,
+    num_artifacts: int,
+    benchmark: Benchmark
+):
     generated_artifacts = []
     csv_header_ids = f"artifact_id\n"
     csv_ids = csv_header_ids
@@ -238,24 +245,26 @@ def CreateUsers(num: int, benchmark: Benchmark):
     return (csv.strip(), session_tokens, deploy_tokens)
 
 def WriteToFile(csv: str, filepath: str):
-    f = open(filepath, "x") # Create. Fail if exists
+    f = open(filepath, "w") # Overwrite if exists
     f.write(csv)
     f.close()
 
 def EnsurePathCreated(path: str):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-def run_bootstrap(benchmark: Benchmark) -> (bool, dict):
+def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     # TODO: Write out some meta on precondition params?
+    
+    writeCSVToLog = True
 
     base_path = config.BENCHMARK_OUTPUT_PATH #"/home/alpine/artifacts/B2"
     EnsurePathCreated(base_path)
 
     num_users = 10
     num_repos = 10
-    num_artifacts = 100
     num_upload_threads = 10
+    num_artifacts = benchmark.number_of_artefacts
 
     user_filename = "created_users.csv"
     repo_filename = "created_repositories.csv"
@@ -263,33 +272,38 @@ def run_bootstrap(benchmark: Benchmark) -> (bool, dict):
     artifact_datas_filename = "created_artifact_datas.csv"
 
     (user_csv, session_tokens, deploy_tokens) = CreateUsers(num_users, benchmark)
+    
     WriteToFile(user_csv, f"{base_path}/{user_filename}")
+    if writeCSVToLog: log(user_csv)
 
-    WriteToFile(CreateRepositories
-        (
-            num_repos,
-            num_users,
-            session_tokens,
-            benchmark
-            ), 
-        f"{base_path}/{repo_filename}"
+    repo_csv = CreateRepositories(
+        num_repos,
+        num_users,
+        session_tokens,
+        benchmark
     )
+
+    WriteToFile(repo_csv, f"{base_path}/{repo_filename}")
+    if writeCSVToLog: log(repo_csv)
 
     # Apply preconditions (Multithreaded B1)
     (ids, datas) = UploadArtifactsConcurrently(
-        # num_upload_threads, 
+        num_upload_threads, 
         num_users, 
         deploy_tokens,
         num_repos, 
-        num_artifacts
+        num_artifacts,
+        benchmark
     )
 
     WriteToFile(ids, 
         f"{base_path}/{artifact_ids_filename}"
     )
+    if writeCSVToLog: log(ids)
 
     WriteToFile(datas, 
         f"{base_path}/{artifact_datas_filename}"
     )
+    if writeCSVToLog: log(datas)
 
     return(True, None)

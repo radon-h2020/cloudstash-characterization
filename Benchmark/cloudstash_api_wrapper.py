@@ -1,4 +1,3 @@
-import sys
 import requests
 import base64
 import time
@@ -7,16 +6,21 @@ from benchmark import Benchmark
 from artifact_generator import generate_artifact
 from utils import shell, log
 from config import GlobalConfig
-import os.path
 from os import path
+from zipfile import ZipFile 
+import io
 
 # get config singleton
 config = GlobalConfig.get()
 
-def read_config(config_file):
+def read_config(config_file_bytes: bytes):
     try:
+        # original
+        # config = ConfigParser()
+        # config.read(config_file)
+        
         config = ConfigParser()
-        config.read(config_file)
+        config.read_string(config_file_bytes.decode("utf-8"))
         return config
     except configparser_error as e:
         log("Error reading artifact config file.", error=True)
@@ -154,12 +158,18 @@ def cloudstash_upload_artifact(
                 cloudstash_repo=repository,
                 cloudstash_org=org,
             )
-            if artifact_created:
-                break
+        else:
+            break
 
     if artifact_created:
         # upload artifact to cloudstash
-        artifact_config = read_config("config.ini")
+
+        config_as_bytes = None
+        with ZipFile(artifact_filename) as zip:
+            with zip.open('config.ini') as configfile:
+                config_as_bytes = configfile.read()
+
+        artifact_config = read_config(config_as_bytes)
         payload = {}
         try:
             payload["artifact_name"] = artifact_config.get("FUNCTION", "name")
