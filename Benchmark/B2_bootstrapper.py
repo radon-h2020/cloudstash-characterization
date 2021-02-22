@@ -247,7 +247,7 @@ def WriteToFile(csv: str, filepath: str):
 def EnsurePathCreated(path: str):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
+def run_bootstrap(benchmark: Benchmark) -> (bool, dict):
 
     # TODO: Write out some meta on precondition params?
 

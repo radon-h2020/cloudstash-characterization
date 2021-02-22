@@ -62,7 +62,6 @@ scenarios:
         url: "/artifact"
         json:
             Authorization: "{{ deploy_token }}"
-            # applicationToken: "{{ deploy_token }}"
         body: "{{ artifact_data }}"
         # gzip: true
 
