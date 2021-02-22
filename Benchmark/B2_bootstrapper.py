@@ -7,7 +7,6 @@ from config import GlobalConfig
 from benchmark import Benchmark
 from artillery_report_parser import parse_artillery_output
 import time
-from typing import Tuple
 import requests
 from pathlib import Path
 import logging
@@ -37,9 +36,8 @@ def UploadSingleArtifact(
 ) -> str:
 
     logging.info("Thread %s: starting", index_i)
-    
-    artifact_size = random.randint(
-            config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
+
+    artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
     u_num = index_i % num_users
     username = f"user{u_num}"
@@ -294,4 +292,4 @@ def run_bootstrap(benchmark: Benchmark) -> (bool, dict):
         f"{base_path}/{artifact_datas_filename}"
     )
 
-    return(True, [])
+    return(True, None)

@@ -76,10 +76,12 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
     
-    # _, _ = run_bootstrap(benchmark)
+    benchmark_status, benchmark_data = run_bootstrap(benchmark)
 
     # def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> Tuple[bool, dict]:
-    # run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
+    run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
 
-    return(True, None)
-    # pass
+    # TODO: Change to artillery output rather than bootstrapping
+    
+    return(benchmark_status, benchmark_data)
+
