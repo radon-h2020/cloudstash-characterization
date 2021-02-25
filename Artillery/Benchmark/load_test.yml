@@ -10,7 +10,7 @@ config:
 
   # This is how data is loaded from multiple csv files in same test script
   -
-    path: "/home/alpine/artifacts/B2/created_users.csv"
+    path: "/home/alpine/output/created_users.csv"
     fields:
       - "username"
       - "password"
@@ -19,20 +19,20 @@ config:
     order: sequence
     skipHeader: true
   -
-    path: "/home/alpine/artifacts/B2/created_repositories.csv"
+    path: "/home/alpine/output/created_repositories.csv"
     fields:
       - "repo_id"
       - "user"
     order: sequence
     skipHeader: true
   -
-    path: "/home/alpine/artifacts/B2/created_artifact_ids.csv"
+    path: "/home/alpine/output/created_artifact_ids.csv"
     fields:
       - "artifact_id"
     order: sequence
     skipHeader: true
   -
-    path: "/home/alpine/artifacts/B2/created_artifact_datas.csv"
+    path: "/home/alpine/output/created_artifact_datas.csv"
     fields:
       - "artifact_data"
     order: sequence
@@ -45,23 +45,25 @@ config:
   # Upload functions
 
 scenarios:
-  - flow:
-    - get: # list artifacts
-        url: "/repository/{repo_id}"
-        cookie:
-          - authtoken=: session_token
+  - name: List Artifacts
+    flow:
+      - get: # list artifacts
+          url: "/repository/{repo_id}"
+          cookie:
+            - authtoken=: session_token
 
-  - flow:
-    - get: # get artifact
-        url: "/artifact_download/{artifact_id}" # load from CSV
-        # accourding to code for function the 'security' is implemented 
-        #to get the id, not enforced on retrieval
+  - name: Get Artifact
+    flow:
+      - get: # get artifact
+          url: "/artifact_download/{artifact_id}" # load from CSV
+          # accourding to code for function the 'security' is implemented 
+          #to get the id, not enforced on retrieval
 
-  - flow:
-    - post: # upload function
-        url: "/artifact"
-        json:
-            Authorization: "{{ deploy_token }}"
-        body: "{{ artifact_data }}"
-        # gzip: true
-
+  - name: Upload Artifact
+    flow:
+      - post: # upload function
+          url: "/artifact"
+          json:
+              Authorization: "{{ deploy_token }}"
+          body: "{{ artifact_data }}"
+          # gzip: true

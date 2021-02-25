@@ -110,8 +110,8 @@ def UploadArtifactsConcurrently(
     for id in repo_ids:
         a_names = GetArtifactNames(benchmark, id)
 
-        log(f"Repository Id: {id}")
-        log(f"Artifacts: {a_names}")
+        # log(f"Repository Id: {id}")
+        # log(f"Artifacts: {a_names}")
 
         for a_name in a_names:
             artifact_ids.append(GetArtifactId(benchmark, id, a_name))
@@ -135,9 +135,9 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
         )
         if response.status_code == 200:
             json_obj = response.json()
-            log("")
-            log("Logging json_obj")
-            log(json_obj)
+            # log("")
+            # log("Logging json_obj")
+            # log(json_obj)
             for obj in json_obj: # should only be 1. Ok to return
                 return obj['artifactId']
         else: 
@@ -156,7 +156,6 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int):
     log(f"Listing artifacts to obtain artifact names")
     names = []
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}" #\?repoType\=Function"
-    log(endpoint_url)
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
         response = requests.get(
@@ -320,8 +319,6 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     )
     WriteToFile(repo_csv, f"{base_path}/{repo_filename}")
     if writeCSVToLog: log(repo_csv)
-
-    # Maybe get ids now that code is there for it
 
     # Apply preconditions (Multithreaded B1)
     (ids, datas) = UploadArtifactsConcurrently(

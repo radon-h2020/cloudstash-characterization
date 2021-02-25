@@ -7,6 +7,7 @@ from config import GlobalConfig
 from benchmark import Benchmark
 from artillery_report_parser import parse_artillery_output
 from B2_bootstrapper import run_bootstrap, WriteToFile
+import os 
 
 # get config singleton
 config = GlobalConfig.get()
@@ -85,13 +86,11 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
 
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
-    
-    benchmark_status, benchmark_data = run_bootstrap(benchmark)
 
-    # def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False) -> Tuple[bool, dict]:
-    run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
+    bootstrap_status, _ = run_bootstrap(benchmark)
 
-    # TODO: Change to artillery output rather than bootstrapping
-    
-    return(benchmark_status, benchmark_data)
+    # Set environment variable  gateway_url = benchmark.gateway_url
+    os.environ["gateway_url"] = benchmark.gateway_url
+    benchmark_status, benchmark_output = run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
 
+    return(benchmark_status, benchmark_output)
