@@ -36,7 +36,8 @@ def UploadSingleArtifact(
     num_users: int,
     num_repos: int,
     benchmark: Benchmark,
-    deploy_tokens: list
+    deploy_tokens: list,
+    datas: list
 ) -> str:
 
     logging.info("Thread %s: starting", index_i)
@@ -66,7 +67,7 @@ def UploadSingleArtifact(
         if success == True:
             artifact_data = benchmark_obj["artifact_raw_data"]
             logging.info("Thread %s: finishing", index_i)
-            return artifact_data
+            datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
     num_threads: int, 
@@ -91,26 +92,29 @@ def UploadArtifactsConcurrently(
     for i in range(0, num_artifacts):
         logging.info("Main    : before creating thread")
         t = threading.Thread(target=UploadSingleArtifact, 
-            args=(i, num_users, num_repos, benchmark, deploy_tokens))
+            args=(i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
         logging.info("Main    : before running thread")
         t.start()
         threads.append(t)
 
     logging.info("Main    : wait for the thread to finish")
     for t in threads:
-        artifact_raw_data = t.join()
-        generated_artifacts.append(artifact_raw_data)
+        t.join()
+        # generated_artifacts.append(artifact_raw_data)
 
     logging.info("Main    : all artifacts uploaded")
 
     repo_ids = GetRepositorieIds(benchmark)
-    artifact_names = dict()
     artifact_ids = []
 
     for id in repo_ids:
-        artifact_names[id] = GetArtifactNames(benchmark, id)
-        for (repo_id, a_name) in artifact_names:
-            artifact_ids.append(GetArtifactId(benchmark, repo_id, a_name))
+        a_names = GetArtifactNames(benchmark, id)
+
+        log(f"Repository Id: {id}")
+        log(f"Artifacts: {a_names}")
+
+        for a_name in a_names:
+            artifact_ids.append(GetArtifactId(benchmark, id, a_name))
 
     for id in artifact_ids:
         csv_ids = f"{csv_ids}{id},\n"
@@ -124,28 +128,48 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
     log(f"Listing artifacts to obtain artifact ids")
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}/artifact/{artifact_name}"
     headers = {"content-type": "application/json"}
-    response = requests.get(
-                    endpoint_url,
-                    headers=headers,
-                )
-    json_obj = response.json()
-    for obj in json_obj['artifacts']:
-        return obj['artifactId']
+    for _ in range(0, config.RETRIES):
+        response = requests.get(
+            endpoint_url,
+            headers=headers,
+        )
+        if response.status_code == 200:
+            json_obj = response.json()
+            log("")
+            log("Logging json_obj")
+            log(json_obj)
+            for obj in json_obj: # should only be 1. Ok to return
+                return obj['artifactId']
+        else: 
+            log(
+                f"Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
+                error=True,
+            )
+            log(
+                f"Status code {response.status_code} endpoint url {endpoint_url}",
+                error=True,
+            )
+            time.sleep(config.RETRY_DELAY)
+
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int):
     log(f"Listing artifacts to obtain artifact names")
     names = []
-    endpoint_url = f"{benchmark.gateway_url}/publicrepository\?repoType\=Function"
+    endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}" #\?repoType\=Function"
+    log(endpoint_url)
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
         response = requests.get(
-                        endpoint_url,
-                        headers=headers,
-                    )
+            endpoint_url, 
+            headers=headers
+        )
+
         if response.status_code == 200:
             json_objs = response.json()
-            for obj in json_objs:
-                names.append(obj['artifact_name'])
+            for obj in json_objs['artifacts']:
+                names.append(f"{obj['group_name']}/{obj['artifact_name']}")
+            return names
+
         else:
             log(
                 f"Repository creation failed for repository{repository_id}, waiting {config.RETRY_DELAY}s before trying again.",
@@ -153,30 +177,37 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int):
             )
             time.sleep(config.RETRY_DELAY)
 
-    return names.strip() # remove last empty line
-
 def GetRepositorieIds(benchmark: Benchmark):
     ids = []
     log(f"Listing repositores to obtain respository ids")
-    endpoint_url = f"{benchmark.gateway_url}/publicrepository\?repoType\=Function"
+    endpoint_url = f"{benchmark.gateway_url}/publicrepository"
+    # \?repoType\=Function
+
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
         response = requests.get(
-                        endpoint_url,
-                        headers=headers,
-                    )
+            endpoint_url,
+            headers=headers,
+            params= {'repoType': 'Function'}
+        )
+
         if response.status_code == 200:
             json_obj = response.json()
-            for repo in json_obj:
+            for repo in json_obj['repositories']:
                 ids.append(repo['repoId'])
+            return ids
+
         else:
             log(
                 f"Failed to get ids for repositories, waiting {config.RETRY_DELAY}s before trying again.",
                 error=True,
             )
+            log(
+                f"Status code {response.status_code} endpoint url {endpoint_url}",
+                error=True,
+            )
             time.sleep(config.RETRY_DELAY)
 
-    return ids
 
 def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: Benchmark):
     header = "repo_id, user\n"
@@ -193,9 +224,9 @@ def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: 
             )
 
             if repo_created:
-                    csv_line = f"{repo_name},{uname}\n"
-                    csv = f"{csv}{csv_line}"
-                    break
+                csv_line = f"{repo_name},{uname}\n"
+                csv = f"{csv}{csv_line}"
+                break
             else:
                 log(
                     f"Repository creation failed for repository{i}, waiting {config.RETRY_DELAY}s before trying again.",
@@ -310,6 +341,8 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     WriteToFile(datas, 
         f"{base_path}/{artifact_datas_filename}"
     )
-    if writeCSVToLog: log(datas)
+    if writeCSVToLog: 
+        log(f"Datas Count: {datas.splitlines().__len__()-1}")
+        # log(f"Example data: {datas.splitlines()[1]}")
 
     return(True, None)

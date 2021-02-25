@@ -20,7 +20,7 @@ def run_load_test(benchmark: Benchmark):
     # Deploy cloudstash
     ###
 
-    shouldDeploy = True
+    shouldDeploy = False
 
     log("----- Create Infrastructure")
 
@@ -31,7 +31,7 @@ def run_load_test(benchmark: Benchmark):
         # set gateway_url in benchmark object
         benchmark.gateway_url = gateway_url
     else: 
-        benchmark.gateway_url = "https://tav1nup498.execute-api.eu-west-1.amazonaws.com/0ab0856d"
+        benchmark.gateway_url = "https://jngmqsq4rg.execute-api.eu-west-1.amazonaws.com/a1f23ce2"
         deployed = True
 
 

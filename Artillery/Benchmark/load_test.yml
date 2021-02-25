@@ -56,7 +56,7 @@ scenarios:
         url: "/artifact_download/{artifact_id}" # load from CSV
         # accourding to code for function the 'security' is implemented 
         #to get the id, not enforced on retrieval
-  
+
   - flow:
     - post: # upload function
         url: "/artifact"
