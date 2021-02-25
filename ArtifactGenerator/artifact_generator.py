@@ -16,7 +16,7 @@ def create_payload(size: int = 4096, filename: str = "payload.txt") -> None:
         os.remove(filename)
 
     payload = ""
-    for i in range(size):
+    for _ in range(size):
         payload = payload + f"{randint(0, 9)}"
 
     with open(filename, "w") as pf:

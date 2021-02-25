@@ -169,13 +169,15 @@ def cloudstash_upload_artifact(
             with zip.open('config.ini') as configfile:
                 config_as_bytes = configfile.read()
 
+            
+
         artifact_config = read_config(config_as_bytes)
         payload = {}
         try:
             payload["artifact_name"] = artifact_config.get("FUNCTION", "name")
             payload["version"] = artifact_config.get("FUNCTION", "version")
             payload["description"] = artifact_config.get("FUNCTION", "description")
-            payload["repositoryName"] = artifact_config.get("REPOSITORY", "repository")
+            payload["repositoryName"] = repository #artifact_config.get("REPOSITORY", "repository")
             payload["organization"] = artifact_config.get("REPOSITORY", "org")
             payload["provider"] = artifact_config.get("RUNTIME", "provider")
             payload["runtime"] = artifact_config.get("RUNTIME", "runtime")
@@ -184,9 +186,10 @@ def cloudstash_upload_artifact(
 
             # TODO what is going on here ??? Taken from Functionhub-Cli
             with open(artifact_filename, "rb") as binfile:
-                encoded = base64.b64encode(binfile.read())
+                file_content = binfile.read()
+                encoded = base64.b64encode(file_content)
             payload["file"] = encoded.decode()
-
+            
             if config.VERBOSE:
                 log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
@@ -239,3 +242,4 @@ def cloudstash_upload_artifact(
 
     else:
         return False
+

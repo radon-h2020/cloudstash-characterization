@@ -13,6 +13,9 @@ import logging
 import threading
 import time
 from typing import Tuple
+import uuid
+
+USERNAMEPREFIX = f"user{str(uuid.uuid4())[:8]}"
 
 from cloudstash_api_wrapper import (
     cloudstash_create_user,
@@ -41,14 +44,14 @@ def UploadSingleArtifact(
     artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
     u_num = index_i % num_users
-    username = f"user{u_num}"
+    username = f"{USERNAMEPREFIX}{u_num}"
     r_num = index_i % num_repos
     repository = f"repo{r_num}"
     organization = username
 
     stop = False
     num = index_i % num_users
-    while stop == False: # continue to all artifacts have been created. We need a certain state
+    while not stop : # continue to all artifacts have been created. We need a certain state
         success, benchmark_obj = cloudstash_upload_artifact(
             benchmark,
             index_i,
@@ -180,11 +183,14 @@ def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: 
     csv = header
     log(f"Creating {num_repos} repositoires split amongst {num_users} users...")
     for i in range(0, num_repos):
-        uname = f"user{i%num_users}"
-        repo_name = f"repository{i}"
+        uname = f"{USERNAMEPREFIX}{i%num_users}"
+        repo_name = f"repo{i}"
         for _ in range(0, config.RETRIES):
             repo_created = cloudstash_create_repository(
-                    benchmark, tokens[i], repo_name)
+                    benchmark, 
+                    tokens[i], 
+                    repo_name
+            )
 
             if repo_created:
                     csv_line = f"{repo_name},{uname}\n"
@@ -207,7 +213,7 @@ def CreateUsers(num: int, benchmark: Benchmark):
 
     log(f"Creating {num} users...")
     for i in range(0, num):
-        uname = f"user{i}"
+        uname = f"{USERNAMEPREFIX}{i}"
         pword = "pass"
         for _ in range(0, config.RETRIES):
             user_created, deploy_token = cloudstash_create_user(
@@ -272,7 +278,6 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     artifact_datas_filename = "created_artifact_datas.csv"
 
     (user_csv, session_tokens, deploy_tokens) = CreateUsers(num_users, benchmark)
-    
     WriteToFile(user_csv, f"{base_path}/{user_filename}")
     if writeCSVToLog: log(user_csv)
 
@@ -282,9 +287,10 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
         session_tokens,
         benchmark
     )
-
     WriteToFile(repo_csv, f"{base_path}/{repo_filename}")
     if writeCSVToLog: log(repo_csv)
+
+    # Maybe get ids now that code is there for it
 
     # Apply preconditions (Multithreaded B1)
     (ids, datas) = UploadArtifactsConcurrently(

@@ -19,12 +19,21 @@ def run_load_test(benchmark: Benchmark):
     ###
     # Deploy cloudstash
     ###
+
+    shouldDeploy = True
+
     log("----- Create Infrastructure")
 
     # deploy cloudstash using serverless, get the api gateway url of the deployment
-    gateway_url, deployed = deploy_cloudstash(benchmark.stage)
-    # set gateway_url in benchmark object
-    benchmark.gateway_url = gateway_url
+    
+    if shouldDeploy:
+        gateway_url, deployed = deploy_cloudstash(benchmark.stage)
+        # set gateway_url in benchmark object
+        benchmark.gateway_url = gateway_url
+    else: 
+        benchmark.gateway_url = "https://tav1nup498.execute-api.eu-west-1.amazonaws.com/0ab0856d"
+        deployed = True
+
 
     # make sure everything is ready before starting benchmark
     log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
@@ -58,8 +67,9 @@ def run_load_test(benchmark: Benchmark):
     ###
     log("----- Remove Benchmark Infrastructure")
 
-    # remove the cloudstash deployment
-    removed = remove_deployment(benchmark.stage)
+    if shouldDeploy:
+        # remove the cloudstash deployment
+        removed = remove_deployment(benchmark.stage)
 
     ###
     # End Benchmark orchestration
