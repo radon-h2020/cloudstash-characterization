@@ -1,11 +1,7 @@
 import random
-from time import sleep
-from utils import shell, log
-from deploy_remove_cloudstash import deploy_cloudstash, remove_deployment
-from run_artillery import run_artillery
+from utils import log
 from config import GlobalConfig
 from benchmark import Benchmark
-from artillery_report_parser import parse_artillery_output
 import time
 import requests
 from pathlib import Path
@@ -65,8 +61,16 @@ def UploadSingleArtifact(
         stop = success
 
         if success == True:
-            artifact_data = benchmark_obj["artifact_raw_data"]
+            # artifact_data = benchmark_obj["artifact_raw_data"]
+            artifact_data = benchmark_obj["payload"]
             logging.info("Thread %s: finishing", index_i)
+
+            # import base64
+
+            # Standard Base64 Encoding
+            # encodedBytes = base64.b64encode(artifact_data.encode("utf-8"))
+            # encodedStr = str(encodedBytes, "utf-8")
+            
             datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
@@ -79,8 +83,13 @@ def UploadArtifactsConcurrently(
 ):
     generated_artifacts = []
     csv_header_ids = f"artifact_id\n"
-    csv_ids = csv_header_ids
-    csv_header_ids = f"artifact_data\n"
+    csv_artifact_ids = csv_header_ids
+
+    csv_header_repo_ids = f"repo_id\n"
+    csv_repo_ids = csv_header_repo_ids
+
+    # csv_header_ids = f"artifact_data\n"
+    csv_header_ids = f"artifact_name, version, description, repositoryName, organization, provider, runtime, handler, applicationToken, file\n"
     csv_artifacts = csv_header_ids
     log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos}...")
 
@@ -104,25 +113,40 @@ def UploadArtifactsConcurrently(
 
     logging.info("Main    : all artifacts uploaded")
 
+    ####
+    # Single threaded from here on. Optimize later maybe
+    ####
+
     repo_ids = GetRepositorieIds(benchmark)
     artifact_ids = []
 
     for id in repo_ids:
         a_names = GetArtifactNames(benchmark, id)
-
-        # log(f"Repository Id: {id}")
-        # log(f"Artifacts: {a_names}")
-
         for a_name in a_names:
             artifact_ids.append(GetArtifactId(benchmark, id, a_name))
 
+    for id in repo_ids:
+        csv_repo_ids = f"{csv_repo_ids}{id}\n"
+
     for id in artifact_ids:
-        csv_ids = f"{csv_ids}{id},\n"
+        csv_artifact_ids = f"{csv_artifact_ids}{id}\n"
 
     for data in generated_artifacts:
-        csv_artifacts = f"{csv_artifacts}{data},\n"
+        artifact_name = data["artifact_name"]
+        version = data["version"]
+        description = data["description"]
+        repositoryName = data["repositoryName"]
+        organization = data["organization"]
+        provider = data["provider"]
+        runtime = data["runtime"]
+        handler = data["handler"]
+        applicationToken = data["applicationToken"]
+        file = data["file"]
 
-    return (csv_ids, csv_artifacts)
+        data_as_line = f"{artifact_name}, {version}, {description}, {repositoryName}, {organization}, {provider}, {runtime}, {handler}, {applicationToken}, {file}\n"
+        csv_artifacts = f"{csv_artifacts}{data_as_line}\n"
+
+    return (csv_artifact_ids, csv_repo_ids, csv_artifacts)
 
 def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
     log(f"Listing artifacts to obtain artifact ids")
@@ -135,9 +159,6 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
         )
         if response.status_code == 200:
             json_obj = response.json()
-            # log("")
-            # log("Logging json_obj")
-            # log(json_obj)
             for obj in json_obj: # should only be 1. Ok to return
                 return obj['artifactId']
         else: 
@@ -304,6 +325,7 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     user_filename = "created_users.csv"
     repo_filename = "created_repositories.csv"
+    repoid_filename = "created_repository_ids.csv"
     artifact_ids_filename = "created_artifact_ids.csv"
     artifact_datas_filename = "created_artifact_datas.csv"
 
@@ -320,8 +342,10 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     WriteToFile(repo_csv, f"{base_path}/{repo_filename}")
     if writeCSVToLog: log(repo_csv)
 
+    # Replace Repository Names with Repository Ids
+
     # Apply preconditions (Multithreaded B1)
-    (ids, datas) = UploadArtifactsConcurrently(
+    (ids, repo_ids, datas) = UploadArtifactsConcurrently(
         num_upload_threads, 
         num_users, 
         deploy_tokens,
@@ -329,6 +353,8 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
         num_artifacts,
         benchmark
     )
+    WriteToFile(repo_ids, f"{base_path}/{repoid_filename}")
+    if writeCSVToLog: log(repo_csv)
 
     WriteToFile(ids, 
         f"{base_path}/{artifact_ids_filename}"

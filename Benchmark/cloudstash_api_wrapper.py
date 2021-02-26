@@ -169,15 +169,13 @@ def cloudstash_upload_artifact(
             with zip.open('config.ini') as configfile:
                 config_as_bytes = configfile.read()
 
-            
-
         artifact_config = read_config(config_as_bytes)
         payload = {}
         try:
             payload["artifact_name"] = artifact_config.get("FUNCTION", "name")
             payload["version"] = artifact_config.get("FUNCTION", "version")
             payload["description"] = artifact_config.get("FUNCTION", "description")
-            payload["repositoryName"] = repository #artifact_config.get("REPOSITORY", "repository")
+            payload["repositoryName"] = artifact_config.get("REPOSITORY", "repository") #repository 
             payload["organization"] = artifact_config.get("REPOSITORY", "org")
             payload["provider"] = artifact_config.get("RUNTIME", "provider")
             payload["runtime"] = artifact_config.get("RUNTIME", "runtime")
@@ -225,7 +223,8 @@ def cloudstash_upload_artifact(
                     "artifact_size": artifact_size,
                     "repository": repository,
                     "user": username,
-                    "artifact_raw_data": payload["file"]
+                    "artifact_raw_data": payload["file"],
+                    "payload": payload
                 }
 
                 if response.status_code == 200:

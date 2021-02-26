@@ -86,11 +86,6 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
 
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
-
-    bootstrap_status, _ = run_bootstrap(benchmark)
-
-    # Set environment variable  gateway_url = benchmark.gateway_url
-    os.environ["gateway_url"] = benchmark.gateway_url
+    # bootstrap_status, _ = run_bootstrap(benchmark)
     benchmark_status, benchmark_output = run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
-
     return(benchmark_status, benchmark_output)
