@@ -4,15 +4,13 @@ config:
     # Responses have to be sent within 10 seconds or the request will be aborted
     timeout: 10
   phases:
-    - duration: 10
-      arrivalRate: 1
-    # - duration: 120
-    #   arrivalRate: 10
-    #   rampTo: 50
-    #   name: "Warm up the application"
-    # - duration: 600
-    #   arrivalRate: 50
-    #   name: "Sustained max load"
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Warm up the application"
+    - duration: 600
+      arrivalRate: 50
+      name: "Sustained max load"
   payload:
 
   # This is how data is loaded from multiple csv files in same test script
