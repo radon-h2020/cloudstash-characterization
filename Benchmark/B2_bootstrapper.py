@@ -7,9 +7,14 @@ import requests
 from pathlib import Path
 import logging
 import threading
-import time
+# import time
 from typing import Tuple
 import uuid
+
+from time import time
+
+from queue import Queue
+from threading import Thread
 
 USERNAMEPREFIX = f"user{str(uuid.uuid4())[:8]}"
 
@@ -25,6 +30,52 @@ config = GlobalConfig.get()
 
 # set random seed
 random.seed(config.RANDOM_SEED)
+
+class GetArtifactIdWorker(Thread):
+
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            # Get the work from the queue and expand the tuple
+            benchmark, repo_id, a_name, artifact_ids = self.queue.get()
+            try:
+                GetArtifactId(benchmark, repo_id, a_name, artifact_ids)
+            finally:
+                self.queue.task_done()
+
+class GetArtifactNamesWorker(Thread):
+
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            # Get the work from the queue and expand the tuple
+            benchmark, repository_id, artifact_names_per_id = self.queue.get()
+            try:
+                GetArtifactNames(benchmark, repository_id, artifact_names_per_id)
+            finally:
+                self.queue.task_done()
+
+class UploadWorker(Thread):
+
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            # Get the work from the queue and expand the tuple
+            index_i, num_users, num_repos, benchmark, deploy_tokens, datas = self.queue.get()
+            try:
+                UploadSingleArtifact(index_i, num_users, num_repos, benchmark, deploy_tokens, datas)
+            finally:
+                self.queue.task_done()
+
 
 # Multithreaded payload function
 def UploadSingleArtifact(
@@ -64,12 +115,6 @@ def UploadSingleArtifact(
             # artifact_data = benchmark_obj["artifact_raw_data"]
             artifact_data = benchmark_obj["payload"]
             logging.info("Thread %s: finishing", index_i)
-
-            # import base64
-
-            # Standard Base64 Encoding
-            # encodedBytes = base64.b64encode(artifact_data.encode("utf-8"))
-            # encodedStr = str(encodedBytes, "utf-8")
             datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
@@ -104,33 +149,87 @@ def UploadArtifactsConcurrently(
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
     
+    ts = time()
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+    # Create 8 worker threads
+    for _ in range(8):
+        worker = UploadWorker(queue)
+        # Setting daemon to True will let the main thread exit even though the workers are blocking
+        worker.daemon = True
+        worker.start()
+    # Put the tasks into the queue as a tuple
     for i in range(0, num_artifacts):
-        logging.info("Main    : before creating thread")
-        t = threading.Thread(target=UploadSingleArtifact, 
-            args=(i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
-        logging.info("Main    : before running thread")
-        t.start()
-        threads.append(t)
+        logging.info('Queueing {}'.format(i))
+        queue.put((i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
+    # Causes the main thread to wait for the queue to finish processing all the tasks
+    queue.join()
+    logging.info('Took %s', time() - ts)
 
-    logging.info("Main    : wait for the thread to finish")
-    for t in threads:
-        t.join()
-        # generated_artifacts.append(artifact_raw_data)
-
-    logging.info("Main    : all artifacts uploaded")
 
     ####
     # Single threaded from here on. Optimize later maybe
     ####
-
     repo_ids = GetRepositorieIds(benchmark)
+
+    ####
+    # Multi threaded from here on
+    ####
+
+    #
+    # Obtain Artifact Names
+    #
+
+    ts = time()
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+    # Create 8 worker threads
+    for _ in range(8):
+        worker = GetArtifactNamesWorker(queue)
+        # Setting daemon to True will let the main thread exit even though the workers are blocking
+        worker.daemon = True
+        worker.start()
+    
+    artifact_names_per_id = data = {k: [] for k in repo_ids}
+    # Put the tasks into the queue as a tuple
+    for i in range(0, len(repo_ids)-1):
+        logging.info('Queueing {}'.format(i))
+        queue.put((benchmark, repo_ids[i], artifact_names_per_id))
+    
+    # Causes the main thread to wait for the queue to finish processing all the tasks
+    queue.join()
+    logging.info('Took %s', time() - ts)
+
+    print(artifact_names_per_id)
+
+    #
+    # Get Ids for artifact names
+    #
+
+    ts = time()
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+    # Create 8 worker threads
+    for _ in range(8):
+        worker = GetArtifactIdWorker(queue)
+        # Setting daemon to True will let the main thread exit even though the workers are blocking
+        worker.daemon = True
+        worker.start()
+    
     artifact_ids = []
+    # Put the tasks into the queue as a tuple
+    for repo_id in artifact_names_per_id:
+        for a_name in artifact_names_per_id[repo_id]:
+            logging.info('Queueing {}'.format(i))
+            queue.put((benchmark, repo_id, a_name, artifact_ids))
+    
+    # Causes the main thread to wait for the queue to finish processing all the tasks
+    queue.join()
+    logging.info('Took %s', time() - ts)
 
-    for id in repo_ids:
-        a_names = GetArtifactNames(benchmark, id)
-        for a_name in a_names:
-            artifact_ids.append(GetArtifactId(benchmark, id, a_name))
-
+    ####
+    # Single threaded from here on. Optimize later maybe
+    ####
     for id in repo_ids:
         csv_repo_ids = f"{csv_repo_ids}{id}\n"
 
@@ -157,7 +256,7 @@ def UploadArtifactsConcurrently(
 
     return (csv_artifact_ids, csv_repo_ids, csv_artifacts, csv_artifact_json)
 
-def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
+def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, artifact_ids: list):
     log(f"Listing artifacts to obtain artifact ids")
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}/artifact/{artifact_name}"
     headers = {"content-type": "application/json"}
@@ -169,7 +268,8 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
         if response.status_code == 200:
             json_obj = response.json()
             for obj in json_obj: # should only be 1. Ok to return
-                return obj['artifactId']
+                artifact_ids.append(obj['artifactId'])
+                return 
         else: 
             log(
                 f"Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
@@ -182,9 +282,9 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str):
             time.sleep(config.RETRY_DELAY)
 
 
-def GetArtifactNames(benchmark: Benchmark, repository_id: int):
+def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: dict):
     log(f"Listing artifacts to obtain artifact names")
-    names = []
+    a_name_list = artifact_names[repository_id]
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}" #\?repoType\=Function"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
@@ -196,8 +296,8 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int):
         if response.status_code == 200:
             json_objs = response.json()
             for obj in json_objs['artifacts']:
-                names.append(f"{obj['group_name']}/{obj['artifact_name']}")
-            return names
+                a_name_list.append(f"{obj['group_name']}/{obj['artifact_name']}")
+            return
 
         else:
             log(
@@ -223,6 +323,8 @@ def GetRepositorieIds(benchmark: Benchmark):
         if response.status_code == 200:
             json_obj = response.json()
             for repo in json_obj['repositories']:
+                org = repo['repoOrg']
+                # if USERNAMEPREFIX in org:
                 ids.append(repo['repoId'])
             return ids
 
@@ -321,7 +423,7 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     # TODO: Write out some meta on precondition params?
     
-    writeCSVToLog = True
+    writeCSVToLog = False
 
     base_path = config.BENCHMARK_OUTPUT_PATH #"/home/alpine/artifacts/B2"
     EnsurePathCreated(base_path)
