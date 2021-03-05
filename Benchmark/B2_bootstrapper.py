@@ -6,13 +6,9 @@ import time
 import requests
 from pathlib import Path
 import logging
-import threading
-# import time
 from typing import Tuple
 import uuid
-
 from time import time
-
 from queue import Queue
 from threading import Thread
 
@@ -75,7 +71,6 @@ class UploadWorker(Thread):
                 UploadSingleArtifact(index_i, num_users, num_repos, benchmark, deploy_tokens, datas)
             finally:
                 self.queue.task_done()
-
 
 # Multithreaded payload function
 def UploadSingleArtifact(
@@ -182,6 +177,8 @@ def UploadArtifactsConcurrently(
     #
     # Obtain Artifact Names
     #
+    if config.VERBOSE:
+        log(f"Listing artifacts to obtain artifact names")
 
     ts = time()
     # Create a queue to communicate with the worker threads
@@ -208,6 +205,9 @@ def UploadArtifactsConcurrently(
     #
     # Get Ids for artifact names
     #
+
+    if config.VERBOSE:
+        log(f"Listing artifacts to obtain artifact ids")
 
     ts = time()
     # Create a queue to communicate with the worker threads
@@ -262,7 +262,6 @@ def UploadArtifactsConcurrently(
     return (csv_artifact_ids, csv_repo_ids, csv_artifacts, csv_artifact_json)
 
 def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, artifact_ids: list):
-    log(f"Listing artifacts to obtain artifact ids")
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}/artifact/{artifact_name}"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
@@ -287,9 +286,8 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
             time.sleep(config.RETRY_DELAY)
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: dict):
-    log(f"Listing artifacts to obtain artifact names")
     a_name_list = artifact_names[repository_id]
-    endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}" #\?repoType\=Function"
+    endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
         response = requests.get(
@@ -302,7 +300,6 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: d
             for obj in json_objs['artifacts']:
                 a_name_list.append(f"{obj['group_name']}/{obj['artifact_name']}")
             return
-
         else:
             log(
                 f"Repository creation failed for repository{repository_id}, waiting {config.RETRY_DELAY}s before trying again.",
@@ -311,10 +308,9 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: d
             time.sleep(config.RETRY_DELAY)
 
 def GetRepositorieIds(benchmark: Benchmark):
-    ids = []
     log(f"Listing repositores to obtain respository ids")
     endpoint_url = f"{benchmark.gateway_url}/publicrepository"
-    # \?repoType\=Function
+    ids = []
 
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
