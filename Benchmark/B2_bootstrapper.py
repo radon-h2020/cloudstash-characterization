@@ -87,7 +87,8 @@ def UploadSingleArtifact(
     datas: list
 ) -> str:
 
-    logging.info("Thread %s: starting", index_i)
+    if config.VERBOSE:
+        logging.info("Thread %s: starting", index_i)
 
     artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
@@ -114,7 +115,8 @@ def UploadSingleArtifact(
         if success == True:
             # artifact_data = benchmark_obj["artifact_raw_data"]
             artifact_data = benchmark_obj["payload"]
-            logging.info("Thread %s: finishing", index_i)
+            if config.VERBOSE:
+                logging.info("Thread %s: finishing", index_i)
             datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
@@ -160,12 +162,13 @@ def UploadArtifactsConcurrently(
         worker.start()
     # Put the tasks into the queue as a tuple
     for i in range(0, num_artifacts):
-        logging.info('Queueing {}'.format(i))
+        if config.VERBOSE:
+            logging.info('Queueing {}'.format(i))
         queue.put((i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
-    logging.info('Took %s', time() - ts)
-
+    if config.VERBOSE:
+        logging.info('Took %s', time() - ts)
 
     ####
     # Single threaded from here on. Optimize later maybe
@@ -193,14 +196,14 @@ def UploadArtifactsConcurrently(
     artifact_names_per_id = data = {k: [] for k in repo_ids}
     # Put the tasks into the queue as a tuple
     for i in range(0, len(repo_ids)-1):
-        logging.info('Queueing {}'.format(i))
+        if config.VERBOSE:
+            logging.info('Queueing {}'.format(i))
         queue.put((benchmark, repo_ids[i], artifact_names_per_id))
     
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
-    logging.info('Took %s', time() - ts)
-
-    print(artifact_names_per_id)
+    if config.VERBOSE:
+        logging.info('Get Artifact Names Took %s', time() - ts)
 
     #
     # Get Ids for artifact names
@@ -220,12 +223,14 @@ def UploadArtifactsConcurrently(
     # Put the tasks into the queue as a tuple
     for repo_id in artifact_names_per_id:
         for a_name in artifact_names_per_id[repo_id]:
-            logging.info('Queueing {}'.format(i))
+            if config.VERBOSE:
+                logging.info('Queueing {}'.format(i))
             queue.put((benchmark, repo_id, a_name, artifact_ids))
     
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
-    logging.info('Took %s', time() - ts)
+    if config.VERBOSE:
+        logging.info('Took %s', time() - ts)
 
     ####
     # Single threaded from here on. Optimize later maybe
@@ -280,7 +285,6 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
                 error=True,
             )
             time.sleep(config.RETRY_DELAY)
-
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: dict):
     log(f"Listing artifacts to obtain artifact names")
