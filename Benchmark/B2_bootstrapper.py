@@ -224,7 +224,7 @@ def UploadArtifactsConcurrently(
     for repo_id in artifact_names_per_id:
         for a_name in artifact_names_per_id[repo_id]:
             if config.VERBOSE:
-                logging.info('Queueing {}'.format(i))
+                logging.info('Queueing {}'.format(a_name))
             queue.put((benchmark, repo_id, a_name, artifact_ids))
     
     # Causes the main thread to wait for the queue to finish processing all the tasks
