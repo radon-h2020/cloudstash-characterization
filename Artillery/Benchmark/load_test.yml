@@ -22,7 +22,6 @@ config:
     path: "/home/alpine/output/created_repository_ids.csv"
     fields:
       - "repo_id"
-      # - "user"
     order: sequence
     skipHeader: true
   -
@@ -34,7 +33,6 @@ config:
   -
     path: "/home/alpine/output/created_artifact_datas.csv"
     fields:
-      # - "artifact_data"
       - "artifact_name"
       - "version"
       - "description"
@@ -48,45 +46,41 @@ config:
     order: sequence
     skipHeader: true
 
-
 ### Endpoints to test against ###
   # List functions
   # Get function
   # Upload functions
 
 scenarios:
-  # - name: List Artifacts
-  #   flow:
-  #     - get: # list artifacts
-  #         url: "/repository/{{repo_id}}"
-  #         # headers:
-  #         #   Set-Cookie: "authtoken={{session_token}}"
-  #         cookie:
-  #           authtoken: "{{session_token}}"
+  - name: List Artifacts
+    flow:
+      - get: # list artifacts
+          url: "/repository/{{repo_id}}"
+          cookie:
+            authtoken: "{{session_token}}"
 
-  # - name: Get Artifact
-  #   flow:
-  #     - get: # get artifact
-  #         url: "/artifact_download/{{artifact_id}}" # load from CSV
-  #         # accourding to code for function the 'security' is implemented 
-  #         #to get the id, not enforced on retrieval
+  - name: Get Artifact
+    flow:
+      - get: # get artifact
+          url: "/artifact_download/{{artifact_id}}" # load from CSV
+          # accourding to code for function the 'security' is implemented 
+          #to get the id, not enforced on retrieval
 
   - name: Upload Artifact
     flow:
       - post: # upload function
           url: "/artifact"
           headers:
-            Authorization: "{{applicationToken}}"
+            Authorization: "{{ applicationToken }}"
             content-type: "application/json"
-          # body: "{{artifact_data}}"
           json: 
-            artifact_name: "{{artifact_name}}"
-            version: "{{version}}"
-            description: "{{description}}"
-            repositoryName: "{{repositoryName}}"
-            organization: "{{organization}}"
-            provider: "{{provider}}"
-            runtime: "{{runtime}}"
-            handler: "{{handler}}"
-            applicationToken: "{{applicationToken}}"
-            file: "{{file}}"
+            artifact_name: "{{ artifact_name }}"
+            version: "{{ version }}"
+            description: "{{ description }}"
+            repositoryName: "{{ repositoryName }}"
+            organization: "{{ organization }}"
+            provider: "{{ provider }}"
+            runtime: "{{ runtime }}"
+            handler: "{{ handler }}"
+            applicationToken: "{{ applicationToken }}"
+            file: "{{ file }}"

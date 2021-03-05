@@ -9,6 +9,7 @@ from config import GlobalConfig
 from os import path
 from zipfile import ZipFile 
 import io
+import os
 
 # get config singleton
 config = GlobalConfig.get()
@@ -147,10 +148,16 @@ def cloudstash_upload_artifact(
     artifact_zip_file = f"{artifact_num}_artifact.zip"
     artifact_filename = f"{config.ARTIFACT_STORE_PATH}/{artifact_zip_file}"
 
+    artifact_exists = path.exists(artifact_filename)
+    if artifact_exists:
+        os.remove(artifact_filename)
+
     # if artifact has already been created, existing artifact will be used
     # retry up to 5 times to generate artifact
     for _ in range(0, 5):
-        artifact_created = path.exists(artifact_filename)
+        artifact_created = False
+        # artifact_created = path.exists(artifact_filename)        
+
         if not artifact_created:
             artifact_created = generate_artifact(
                 artifact_size=artifact_size,
@@ -159,6 +166,7 @@ def cloudstash_upload_artifact(
                 cloudstash_org=org,
             )
         else:
+
             break
 
     if artifact_created:

@@ -32,7 +32,7 @@ def run_load_test(benchmark: Benchmark):
         # set gateway_url in benchmark object
         benchmark.gateway_url = gateway_url
     else: 
-        benchmark.gateway_url = "https://jngmqsq4rg.execute-api.eu-west-1.amazonaws.com/a1f23ce2"
+        benchmark.gateway_url = "https://fqilo2q3d8.execute-api.eu-west-1.amazonaws.com/d3e781cd"
         deployed = True
 
 
@@ -86,6 +86,6 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
 
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
-    # bootstrap_status, _ = run_bootstrap(benchmark)
+    bootstrap_status, _ = run_bootstrap(benchmark)
     benchmark_status, benchmark_output = run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
     return(benchmark_status, benchmark_output)
