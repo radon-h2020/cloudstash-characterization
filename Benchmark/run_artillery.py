@@ -37,9 +37,3 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
         )
         log(f"(artillery stdout) {res.stdout}", error=True)
         return (False, None)
-
-
-# TEST
-#  gateway_url = "https://ryjtk5xgpg.execute-api.eu-west-1.amazonaws.com/deploy-test-1"
-#  script_file = "create_users.yml"
-#  run_artillery(script_file, gateway_url)

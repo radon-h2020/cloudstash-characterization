@@ -12,7 +12,6 @@ config:
       arrivalRate: 50
       name: "Sustained max load"
   payload:
-
   # This is how data is loaded from multiple csv files in same test script
   -
     path: "/home/alpine/output/created_users.csv"
