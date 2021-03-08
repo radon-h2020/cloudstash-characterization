@@ -11,6 +11,7 @@ class Benchmark:
         self.end_time = None
         self.running_time = None
         self.gateway_url = None
+        self.payload = None
 
     def log_experiment_stop_time(self) -> None:
         self.end_time = time.time()

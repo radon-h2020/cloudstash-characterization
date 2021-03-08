@@ -1,4 +1,3 @@
-import sys
 import requests
 import base64
 import time
@@ -7,9 +6,26 @@ from benchmark import Benchmark
 from artifact_generator import generate_artifact
 from utils import shell, log
 from config import GlobalConfig
+from os import path
+from zipfile import ZipFile 
+import io
+import os
 
 # get config singleton
 config = GlobalConfig.get()
+
+def read_config(config_file_bytes: bytes):
+    try:
+        # original
+        # config = ConfigParser()
+        # config.read(config_file)
+        
+        config = ConfigParser()
+        config.read_string(config_file_bytes.decode("utf-8"))
+        return config
+    except configparser_error as e:
+        log("Error reading artifact config file.", error=True)
+        raise e
 
 
 def cloudstash_create_user(benchmark: Benchmark, username: str, password: str) -> (bool, str):
@@ -114,19 +130,9 @@ def cloudstash_create_repository(benchmark: Benchmark, session_token: str, repos
             )
             time.sleep(config.RETRY_DELAY)
 
-    log(f"Create repository request HTTP status code {response.status_code}")
+        log(f"Create repository request HTTP status code {response.status_code}")
 
     return True
-
-
-def read_config(config_file):
-    try:
-        config = ConfigParser()
-        config.read(config_file)
-        return config
-    except configparser_error as e:
-        log("Error reading artifact config file.", error=True)
-        raise e
 
 
 def cloudstash_upload_artifact(
@@ -136,63 +142,66 @@ def cloudstash_upload_artifact(
     username: str,
     deploy_token: str,
     repository: str,
-    org: str,
+    org: str
 ) -> True:
 
     artifact_zip_file = f"{artifact_num}_artifact.zip"
     artifact_filename = f"{config.ARTIFACT_STORE_PATH}/{artifact_zip_file}"
 
+    artifact_exists = path.exists(artifact_filename)
+    if artifact_exists:
+        os.remove(artifact_filename)
+
     # if artifact has already been created, existing artifact will be used
     # retry up to 5 times to generate artifact
     for _ in range(0, 5):
-        generated_artifact = generate_artifact(
-            artifact_size=artifact_size,
-            artifact_name=artifact_filename,
-            cloudstash_repo=repository,
-            cloudstash_org=org,
-        )
-        if generated_artifact:
+        artifact_created = False
+        # artifact_created = path.exists(artifact_filename)        
+
+        if not artifact_created:
+            artifact_created = generate_artifact(
+                artifact_size=artifact_size,
+                artifact_name=artifact_filename,
+                cloudstash_repo=repository,
+                cloudstash_org=org,
+            )
+        else:
+
             break
 
-    if generated_artifact:
+    if artifact_created:
         # upload artifact to cloudstash
 
-        artifact_config = read_config("config.ini")
+        config_as_bytes = None
+        with ZipFile(artifact_filename) as zip:
+            with zip.open('config.ini') as configfile:
+                config_as_bytes = configfile.read()
 
+        artifact_config = read_config(config_as_bytes)
         payload = {}
         try:
             payload["artifact_name"] = artifact_config.get("FUNCTION", "name")
             payload["version"] = artifact_config.get("FUNCTION", "version")
             payload["description"] = artifact_config.get("FUNCTION", "description")
-            payload["repositoryName"] = artifact_config.get("REPOSITORY", "repository")
+            payload["repositoryName"] = artifact_config.get("REPOSITORY", "repository") #repository 
             payload["organization"] = artifact_config.get("REPOSITORY", "org")
             payload["provider"] = artifact_config.get("RUNTIME", "provider")
             payload["runtime"] = artifact_config.get("RUNTIME", "runtime")
             payload["handler"] = artifact_config.get("RUNTIME", "handler")
             payload["applicationToken"] = deploy_token
 
-            #  with open(artifact_filename, "rb") as binfile:
-            #  encoded = binfile.read()
-            #  payload["file"] = encoded.decode("utf-8")
-
-            #  with open(artifact_filename, "rb") as binfile:
-            #  bytesAsString = binfile.read().decode("utf-8")
-            #  payload["file"] = base64.b64encode(bytesAsString)
-
-            # TODO what is going on here ???
+            # TODO what is going on here ??? Taken from Functionhub-Cli
             with open(artifact_filename, "rb") as binfile:
-                encoded = base64.b64encode(binfile.read())
+                file_content = binfile.read()
+                encoded = base64.b64encode(file_content)
             payload["file"] = encoded.decode()
-
+            
             if config.VERBOSE:
                 log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
             headers = {"content-type": "application/json", "Authorization": deploy_token}
-
             endpoint_url = f"{benchmark.gateway_url}/artifact"
-
             response = None
-
             start_time = time.time()
 
             try:
@@ -222,6 +231,8 @@ def cloudstash_upload_artifact(
                     "artifact_size": artifact_size,
                     "repository": repository,
                     "user": username,
+                    "artifact_raw_data": payload["file"],
+                    "payload": payload
                 }
 
                 if response.status_code == 200:
@@ -238,3 +249,4 @@ def cloudstash_upload_artifact(
 
     else:
         return False
+

@@ -3,12 +3,6 @@ import sys
 sys.path.append("../ArtifactGenerator")  # noqa
 import csv
 import uuid
-import time
-import json
-import shutil
-import errno
-import base64
-import os
 import random
 from time import sleep
 from artillery_report_parser import parse_artillery_output
@@ -66,7 +60,8 @@ def run_sequential_benchmark(benchmark: Benchmark):
 
     if benchmark_ran:
         benchmark_output_file = f"{config.BENCHMARK_OUTPUT_PATH}/{benchmark.stage}-{benchmark.benchmark}-{benchmark.number_of_artefacts}.csv"
-        wrote_file = write_benchmark_results_csv_file(benchmark, benchmark_output_file, benchmark_data)
+        wrote_file = write_benchmark_results_csv_file(
+            benchmark, benchmark_output_file, benchmark_data)
 
     ###
     # Teardown cloudstash instance
@@ -98,7 +93,8 @@ def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str,
         "user",
     ]
     with open(results_filename, "w") as csvfile:
-        csvfile_writer = csv.DictWriter(csvfile, fieldnames=benchmark_data_fieldnames)
+        csvfile_writer = csv.DictWriter(
+            csvfile, fieldnames=benchmark_data_fieldnames)
         csvfile_writer.writeheader()
         for result in results:
             csvfile_writer.writerow(result)
@@ -117,39 +113,43 @@ def run_benchmark(benchmark: Benchmark) -> (bool, dict):
     organization = username
 
     # Create one user
-    user_created, deploy_token = cloudstash_create_user(benchmark, username, password)
+    user_created, deploy_token = cloudstash_create_user(
+        benchmark, username, password)
 
     # login user to get session token
     if user_created:
-        logged_in, session_token = cloudstash_login_user(benchmark, username, password)
+        logged_in, session_token = cloudstash_login_user(
+            benchmark, username, password)
 
-    # Create one respository
-    if logged_in:
-        repo_created = cloudstash_create_repository(benchmark, session_token, repository)
+        # Create one respository
+        if logged_in:
+            repo_created = cloudstash_create_repository(
+                benchmark, session_token, repository)
 
-    if user_created and repo_created:
-        # Execute the sequential load test
-        # for the number of artifacts specified in benchmark:
-        for i in range(0, benchmark.number_of_artefacts):
-            if config.VERBOSE:
-                log(f"Processing request #{i} ...")
-            # do some incremental logging
-            if i % 100 == 0:
-                log(f"Processing request #{i} ...")
+            if user_created and repo_created:
+                # Execute the sequential load test
+                # for the number of artifacts specified in benchmark:
+                for i in range(0, benchmark.number_of_artefacts):
+                    if config.VERBOSE:
+                        log(f"Processing request #{i} ...")
+                    # do some incremental logging
+                    if i % 100 == 0:
+                        log(f"Processing request #{i} ...")
 
-            artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
+                    artifact_size = random.randint(
+                        config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
-            # make sure that we do not add the same benchmark_data multiple times
-            benchmark_data = None
+                    # make sure that we do not add the same benchmark_data multiple times
+                    benchmark_data = None
 
-            # benchmark uploading an artifact
-            success, benchmark_data = cloudstash_upload_artifact(
-                benchmark, i, artifact_size, username, deploy_token, repository, organization
-            )
+                    # benchmark uploading an artifact
+                    success, benchmark_data = cloudstash_upload_artifact(
+                        benchmark, i, artifact_size, username, deploy_token, repository, organization
+                    )
 
-            # save data from upload attempt
-            if benchmark_data is not None:
-                results.append(benchmark_data)
+                    # save data from upload attempt
+                    if benchmark_data is not None:
+                        results.append(benchmark_data)
 
         return (True, results)
     else:

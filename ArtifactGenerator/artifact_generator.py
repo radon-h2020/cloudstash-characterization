@@ -4,6 +4,7 @@ import sys
 import uuid
 from random import seed, randint
 from zipfile import ZipFile
+from pathlib import Path
 
 seed(time.time())
 
@@ -16,7 +17,7 @@ def create_payload(size: int = 4096, filename: str = "payload.txt") -> None:
         os.remove(filename)
 
     payload = ""
-    for i in range(size):
+    for _ in range(size):
         payload = payload + f"{randint(0, 9)}"
 
     with open(filename, "w") as pf:
@@ -59,7 +60,10 @@ def create_zip_archive(filename: str = "artifact.zip", files_to_be_zipped: list 
 
     with ZipFile(filename, "w") as zf:
         for _file in files_to_be_zipped:
-            zf.write(_file)
+            if "payload" in _file:
+                zf.write(_file, "payload.txt")
+            if "config" in _file:
+                zf.write(_file, "config.ini")
             if not "config.ini" in _file:
                 os.remove(_file)
     if VERBOSE:
@@ -73,8 +77,10 @@ def generate_artifact(
     cloudstash_org: str,
 ) -> bool:
     try:
-        payload_file = "payload.txt"
-        config_file = "config.ini"
+        TEMPFOLDERPREFIX = f"TMP{str(uuid.uuid4())[:8]}"
+        Path(TEMPFOLDERPREFIX).mkdir(parents=True, exist_ok=True)
+        payload_file = f"{TEMPFOLDERPREFIX}/payload.txt"
+        config_file = f"{TEMPFOLDERPREFIX}/config.ini"
 
         # create binary nonsense file to simulate function code
         create_payload(size=artifact_size, filename=payload_file)
@@ -85,6 +91,9 @@ def generate_artifact(
 
         files_to_be_zipped = [payload_file, config_file]
         create_zip_archive(filename=artifact_name, files_to_be_zipped=files_to_be_zipped)
+        
+        os.remove(config_file)
+        os.rmdir(TEMPFOLDERPREFIX) # Clean up tmp folder
         return True
 
     except Exception as err:

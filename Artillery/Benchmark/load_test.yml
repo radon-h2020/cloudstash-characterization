@@ -4,37 +4,51 @@ config:
     # Responses have to be sent within 10 seconds or the request will be aborted
     timeout: 10
   phases:
-    - duration: 10
-      arrivalRate: 1
+    - duration: "{{ $processEnvironment.ramp_up_duration }}" # 120
+      arrivalRate: "{{ $processEnvironment.ramp_up_arrivalrate }}" # 10
+      rampTo: "{{ $processEnvironment.ramp_up_to }}" # 50
+      name: "Warm up the application"
+    - duration: "{{ $processEnvironment.load_duration }}" # 600
+      arrivalRate: "{{ $processEnvironment.arrivalRate }}" # 50
+      name: "Sustained max load"
   payload:
-
   # This is how data is loaded from multiple csv files in same test script
-
-  # need somewhere to store a user_token. Most likely environment vars
-  # Need csv with artifacts to GET (get artifact)
-  # Need csv with repositores to get all artifacts (list artifacts)
-  # Need csv with 'serialized' post request to Upload Artifacts
-    # "id, "
-
   -
-    path: "./pets.csv"
-    fields:
-      - "species"
-      - "name"
-  -
-    path: "./urls.csv"
-    fields:
-      - "url"
-
-  -
-    path: "users.csv"
+    path: "/home/alpine/output/created_users.csv"
     fields:
       - "username"
       - "password"
+      - "session_token"
+      - "deploy_token"
     order: sequence
     skipHeader: true
-
-
+  -
+    path: "/home/alpine/output/created_repository_ids.csv"
+    fields:
+      - "repo_id"
+    order: sequence
+    skipHeader: true
+  -
+    path: "/home/alpine/output/created_artifact_ids.csv"
+    fields:
+      - "artifact_id"
+    order: sequence
+    skipHeader: true
+  -
+    path: "/home/alpine/output/created_artifact_datas.csv"
+    fields:
+      - "artifact_name"
+      - "version"
+      - "description"
+      - "repositoryName"
+      - "organization"
+      - "provider"
+      - "runtime"
+      - "handler"
+      - "applicationToken"
+      - "file"
+    order: sequence
+    skipHeader: true
 
 ### Endpoints to test against ###
   # List functions
@@ -42,22 +56,35 @@ config:
   # Upload functions
 
 scenarios:
-  - flow:
-    - get: # list artifacts
-        url: "/repository/{repo_id}"
-        json:
-            username: "{{ username }}"
-            password: "{{ password }}"
-    
-    - get: # get artifact
-        url: "/artifact_download/{artifact_id}" # load from CSV
-        json:
-            username: "{{ username }}"
-            password: "{{ password }}"
+  - name: List Artifacts
+    flow:
+      - get: # list artifacts
+          url: "/repository/{{repo_id}}"
+          cookie:
+            authtoken: "{{session_token}}"
 
-    - post: # upload function
-        url: "/artifact"
-        json:
-            username: "{{ username }}"
-            password: "{{ password }}"
-        gzip: true
+  - name: Get Artifact
+    flow:
+      - get: # get artifact
+          url: "/artifact_download/{{artifact_id}}" # load from CSV
+          # accourding to code for function the 'security' is implemented 
+          #to get the id, not enforced on retrieval
+
+  - name: Upload Artifact
+    flow:
+      - post: # upload function
+          url: "/artifact"
+          headers:
+            Authorization: "{{ applicationToken }}"
+            content-type: "application/json"
+          json: 
+            artifact_name: "{{ artifact_name }}"
+            version: "{{ version }}"
+            description: "{{ description }}"
+            repositoryName: "{{ repositoryName }}"
+            organization: "{{ organization }}"
+            provider: "{{ provider }}"
+            runtime: "{{ runtime }}"
+            handler: "{{ handler }}"
+            applicationToken: "{{ applicationToken }}"
+            file: "{{ file }}"

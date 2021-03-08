@@ -6,6 +6,8 @@ from run_artillery import run_artillery
 from config import GlobalConfig
 from benchmark import Benchmark
 from artillery_report_parser import parse_artillery_output
+from B2_bootstrapper import run_bootstrap, WriteToFile
+import os 
 
 # get config singleton
 config = GlobalConfig.get()
@@ -18,12 +20,21 @@ def run_load_test(benchmark: Benchmark):
     ###
     # Deploy cloudstash
     ###
+
+    shouldDeploy = False
+
     log("----- Create Infrastructure")
 
     # deploy cloudstash using serverless, get the api gateway url of the deployment
-    gateway_url, deployed = deploy_cloudstash(benchmark.stage)
-    # set gateway_url in benchmark object
-    benchmark.gateway_url = gateway_url
+    
+    if shouldDeploy:
+        gateway_url, deployed = deploy_cloudstash(benchmark.stage)
+        # set gateway_url in benchmark object
+        benchmark.gateway_url = gateway_url
+    else: 
+        benchmark.gateway_url = "https://fqilo2q3d8.execute-api.eu-west-1.amazonaws.com/d3e781cd"
+        deployed = True
+
 
     # make sure everything is ready before starting benchmark
     log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
@@ -57,8 +68,9 @@ def run_load_test(benchmark: Benchmark):
     ###
     log("----- Remove Benchmark Infrastructure")
 
-    # remove the cloudstash deployment
-    removed = remove_deployment(benchmark.stage)
+    if shouldDeploy:
+        # remove the cloudstash deployment
+        removed = remove_deployment(benchmark.stage)
 
     ###
     # End Benchmark orchestration
@@ -69,10 +81,11 @@ def run_load_test(benchmark: Benchmark):
 
 
 def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str, results: list) -> bool:
-    # TODO
+    WriteToFile(results, results_filename)
     pass
 
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):
-    # TODO
-    pass
+    bootstrap_status, _ = run_bootstrap(benchmark)
+    benchmark_status, benchmark_output = run_artillery("Benchmark/load_test.yml", benchmark.gateway_url, True)
+    return(benchmark_status, benchmark_output)

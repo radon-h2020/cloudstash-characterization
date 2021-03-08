@@ -22,6 +22,9 @@ class GlobalConfig:
         # where is the artillery binary
         self.ARTILLERY_BIN_PATH = "/home/alpine/.npm-global/bin/artillery"
 
+        # where the serverless artillery binary is
+        self.SERVERLESS_ARTILLERY_BIN_PATH = "/home/alpine/.npm-global/bin/serverless-artillery"
+
         # where to output artillery reports
         self.BENCHMARK_OUTPUT_PATH = "/home/alpine/output"
 
