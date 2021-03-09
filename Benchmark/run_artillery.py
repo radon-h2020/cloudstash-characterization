@@ -7,7 +7,7 @@ from typing import Tuple
 config = GlobalConfig.get()
 
 
-def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False, use_serverless_artillery = False) -> Tuple[bool, dict]:
+def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bool = False, use_serverless_artillery: bool = False) -> Tuple[bool, dict]:
     log(f"Running Artillery with script {script_file}")
 
     # output report timestamp
@@ -22,7 +22,7 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
         "ramp_up_duration": "120",
         "ramp_up_arrivalrate ": "10",
         "ramp_up_to": "50",
-        "load_duration": "1200",
+        "load_duration": "600",
         "arrivalRate": "30"
     }
 
