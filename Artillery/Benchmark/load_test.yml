@@ -9,7 +9,7 @@ config:
       rampTo: "{{ $processEnvironment.ramp_up_to }}" # 50
       name: "Warm up the application"
     - duration: "{{ $processEnvironment.load_duration }}" # 600
-      arrivalRate: "{{ $processEnvironment.arrivalRate }}" # 50
+      arrivalRate: "{{ $processEnvironment.arrival_rate }}" # 50
       name: "Sustained max load"
   payload:
   # This is how data is loaded from multiple csv files in same test script

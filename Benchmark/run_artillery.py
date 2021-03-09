@@ -23,7 +23,7 @@ def run_artillery(script_file: str, gateway_url: str, print_output_to_stdout: bo
         "ramp_up_arrivalrate ": "10",
         "ramp_up_to": "50",
         "load_duration": "600",
-        "arrivalRate": "30"
+        "arrival_rate": "30"
     }
 
     # create artillery command to be run
