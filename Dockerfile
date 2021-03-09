@@ -17,7 +17,7 @@ RUN \
     # install python, pip, nodejs, npm, bash and aws-cli
     apk add --no-cache bash aws-cli nodejs npm python3 py3-pip && \
     # install artillery npm packages globally
-    npm install -g artillery serverless serverless-artillery && \
+    npm install -g artillery serverless-artillery && \
     # create direcotry to store generated artifacts and reports
     mkdir -p /home/alpine/artifacts && \
     mkdir -p /home/alpine/output && \

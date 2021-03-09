@@ -21,7 +21,7 @@ def run_load_test(benchmark: Benchmark):
     # Deploy cloudstash
     ###
 
-    shouldDeploy = True
+    shouldDeploy = False
 
     log("----- Create Infrastructure")
 
@@ -32,13 +32,14 @@ def run_load_test(benchmark: Benchmark):
         # set gateway_url in benchmark object
         benchmark.gateway_url = gateway_url
     else: 
-        benchmark.gateway_url = "https://fqilo2q3d8.execute-api.eu-west-1.amazonaws.com/d3e781cd"
+        benchmark.gateway_url = "https://prw38bw0yg.execute-api.eu-west-1.amazonaws.com/67cb4a47"
         deployed = True
 
 
     # make sure everything is ready before starting benchmark
-    log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
-    sleep(config.ORCHESTRATION_DELAY)
+    if not shouldDeploy:
+        log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
+        sleep(config.ORCHESTRATION_DELAY)
 
     ###
     # Run the benchmark
@@ -82,7 +83,7 @@ def run_load_test(benchmark: Benchmark):
 
 def write_benchmark_results_csv_file(bencmark: Benchmark, results_filename: str, results: list) -> bool:
     WriteToFile(results, results_filename)
-    pass
+    return True
 
 
 def run_benchmark(benchmark: Benchmark) -> (bool, dict):

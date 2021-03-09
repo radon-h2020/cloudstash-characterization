@@ -4,12 +4,12 @@ config:
     # Responses have to be sent within 10 seconds or the request will be aborted
     timeout: 10
   phases:
-    - duration: "{{ $processEnvironment.ramp_up_duration }}" # 120
-      arrivalRate: "{{ $processEnvironment.ramp_up_arrivalrate }}" # 10
-      rampTo: "{{ $processEnvironment.ramp_up_to }}" # 50
+    - duration: 300 # {{ $processEnvironment.ramp_up_duration }}
+      arrivalRate: 10 # {{ $processEnvironment.ramp_up_arrivalrate }}
+      rampTo: 50 # {{ $processEnvironment.ramp_up_to }}
       name: "Warm up the application"
-    - duration: "{{ $processEnvironment.load_duration }}" # 600
-      arrivalRate: "{{ $processEnvironment.arrival_rate }}" # 50
+    - duration: 1200 # {{ $processEnvironment.load_duration }}
+      arrivalRate: 50 # {{ $processEnvironment.arrival_rate }} 
       name: "Sustained max load"
   payload:
   # This is how data is loaded from multiple csv files in same test script
