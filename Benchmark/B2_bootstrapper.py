@@ -431,7 +431,7 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     num_users = 10
     num_repos = 10
-    num_upload_threads = multiprocessing.cpu_count() * 4
+    num_upload_threads = multiprocessing.cpu_count() * 2
     num_artifacts = benchmark.number_of_artefacts
 
     log(f"Running on CPU with {multiprocessing.cpu_count()} cores. Will run bootstrapper with {num_upload_threads} threads")
