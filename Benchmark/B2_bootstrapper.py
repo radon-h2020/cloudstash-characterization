@@ -11,6 +11,8 @@ import uuid
 from time import time
 from queue import Queue
 from threading import Thread
+import multiprocessing
+from time import sleep
 
 USERNAMEPREFIX = f"user{str(uuid.uuid4())[:8]}"
 
@@ -123,7 +125,6 @@ def UploadArtifactsConcurrently(
     benchmark: Benchmark
 ):
     # THREAD COLLECTIONS
-    threads = []
     generated_artifacts = []
 
     # CSV HEADERS START
@@ -149,8 +150,8 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = Queue()
-    # Create 8 worker threads
-    for _ in range(8):
+    # Create worker threads
+    for _ in range(num_threads):
         worker = UploadWorker(queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
@@ -183,8 +184,8 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = Queue()
-    # Create 8 worker threads
-    for _ in range(8):
+    # Create worker threads
+    for _ in range(num_threads):
         worker = GetArtifactNamesWorker(queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
@@ -212,8 +213,8 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = Queue()
-    # Create 8 worker threads
-    for _ in range(8):
+    # Create worker threads
+    for _ in range(num_threads):
         worker = GetArtifactIdWorker(queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
@@ -430,8 +431,11 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
 
     num_users = 10
     num_repos = 10
-    num_upload_threads = 10
+    num_upload_threads = multiprocessing.cpu_count() * 4
     num_artifacts = benchmark.number_of_artefacts
+
+    log(f"Running on CPU with {multiprocessing.cpu_count()} cores. Will run bootstrapper with {num_upload_threads} threads")
+    sleep(5.0)
 
     user_filename = "created_users.csv"
     repo_filename = "created_repositories.csv"

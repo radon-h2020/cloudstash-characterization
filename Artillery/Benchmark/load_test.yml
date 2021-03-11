@@ -8,8 +8,8 @@ config:
       arrivalRate: 10 # {{ $processEnvironment.ramp_up_arrivalrate }}
       rampTo: 50 # {{ $processEnvironment.ramp_up_to }}
       name: "Warm up the application"
-    - duration: 1200 # {{ $processEnvironment.load_duration }}
-      arrivalRate: 50 # {{ $processEnvironment.arrival_rate }} 
+    - duration: 600 # {{ $processEnvironment.load_duration }}
+      arrivalRate: 30 # {{ $processEnvironment.arrival_rate }} 
       name: "Sustained max load"
   payload:
   # This is how data is loaded from multiple csv files in same test script
