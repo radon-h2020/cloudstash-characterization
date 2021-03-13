@@ -158,7 +158,7 @@ def UploadArtifactsConcurrently(
         worker.start()
     # Put the tasks into the queue as a tuple
     for i in range(0, num_artifacts):
-        if config.VERBOSE:
+        if config.REALLYVERBOSE:
             logging.info('Queueing {}'.format(i))
         queue.put((i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
     # Causes the main thread to wait for the queue to finish processing all the tasks
@@ -194,7 +194,7 @@ def UploadArtifactsConcurrently(
     artifact_names_per_id = data = {k: [] for k in repo_ids}
     # Put the tasks into the queue as a tuple
     for i in range(0, len(repo_ids)-1):
-        if config.VERBOSE:
+        if config.REALLYVERBOSE:
             logging.info('Queueing {}'.format(i))
         queue.put((benchmark, repo_ids[i], artifact_names_per_id))
     
@@ -224,7 +224,7 @@ def UploadArtifactsConcurrently(
     # Put the tasks into the queue as a tuple
     for repo_id in artifact_names_per_id:
         for a_name in artifact_names_per_id[repo_id]:
-            if config.VERBOSE:
+            if config.REALLYVERBOSE:
                 logging.info('Queueing {}'.format(a_name))
             queue.put((benchmark, repo_id, a_name, artifact_ids))
     

@@ -37,6 +37,8 @@ class GlobalConfig:
         # enable more prints
         self.VERBOSE = False
 
+        self.REALLYVERBOSE = False
+
         # how many times to retry cloudstash deployment/teardown
         self.RETRIES = 10
 
