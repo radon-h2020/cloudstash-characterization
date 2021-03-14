@@ -1,7 +1,7 @@
 resource "aws_instance" "orchestrator" {
   key_name      = aws_key_pair.ubuntu.key_name
   ami           = "ami-01996625fff6b8fcc"
-  instance_type = "t3.medium"
+  instance_type = "t3.xlarge"
 
   tags = {
     Name = "cloudstash_characterization_orchestrator"

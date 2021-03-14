@@ -84,8 +84,11 @@ fi
 
 debug=""
 verbose=""
+reallyverbose=""
 [[ $* = *--debug* ]] && progress_msg "Enabling debug prints" && debug="--debug"
 [[ $* = *--verbose* ]] && progress_msg "Enabling verbose prints" && verbose="--verbose"
+[[ $* = *--reallyverbose* ]] && progress_msg "Enabling really verbose prints" && reallyverbose="--reallyverbose"
+
 
 # what benchmark to run
 benchmark="load_test"
@@ -127,7 +130,7 @@ if [[ $* = *--local* ]] ; then
         -v $local_dir/artifacts:/home/alpine/artifacts \
         -v $local_dir/output:/home/alpine/output \
         $docker_image:$docker_tag \
-        $debug $verbose $benchmark $number_of_artefacts \
+        $debug $verbose $reallyverbose $benchmark $number_of_artefacts \
         > $logfile
     "
 else
@@ -140,7 +143,7 @@ else
         -v /home/ubuntu/output:/home/alpine/output \
         -v /home/ubuntu/artifacts:/home/alpine/artifacts \
         $docker_image:$docker_tag \
-        $debug $verbose $benchmark $number_of_artefacts \
+        $debug $verbose $reallyverbose $benchmark $number_of_artefacts \
         > $logfile
     "
 fi

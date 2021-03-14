@@ -33,6 +33,7 @@ cli_args_parser.add_argument(
     help="The number of artefacts to upload during the benchmark",
 )
 cli_args_parser.add_argument("--verbose", action="store_true", help="Enable more verbose messages")
+cli_args_parser.add_argument("--reallyverbose", action="store_true", help="Enable really verbose messages")
 cli_args_parser.add_argument("--debug", action="store_true", help="Enable debug prints")
 
 # parse the cli arguments
@@ -42,6 +43,9 @@ cli_args = cli_args_parser.parse_args()
 if cli_args.verbose:
     config.VERBOSE = True
     log("Verbose outputs enabled.")
+if cli_args.reallyverbose:
+    config.REALLYVERBOSE = True
+    log("Really verbose outputs enabled.")
 if cli_args.debug:
     config.DEBUG = True
     log("Debug outputs enabled.")
