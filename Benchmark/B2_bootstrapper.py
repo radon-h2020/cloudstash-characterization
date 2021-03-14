@@ -146,7 +146,7 @@ def UploadSingleArtifact(
 ) -> str:
 
     if config.VERBOSE:
-        log("Processing %s: starting", index_i)
+        log(f"Processing {index_i}: starting")
 
     artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
@@ -174,7 +174,7 @@ def UploadSingleArtifact(
             # artifact_data = benchmark_obj["artifact_raw_data"]
             artifact_data = benchmark_obj["payload"]
             if config.VERBOSE:
-                log("Processing %s: finishing", index_i)
+                log(f"Processing {index_i}: finishing")
             datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
