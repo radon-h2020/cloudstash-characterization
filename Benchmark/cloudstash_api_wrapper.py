@@ -190,13 +190,12 @@ def cloudstash_upload_artifact(
             payload["handler"] = artifact_config.get("RUNTIME", "handler")
             payload["applicationToken"] = deploy_token
 
-            # TODO what is going on here ??? Taken from Functionhub-Cli
             with open(artifact_filename, "rb") as binfile:
                 file_content = binfile.read()
                 encoded = base64.b64encode(file_content)
             payload["file"] = encoded.decode()
             
-            if config.VERBOSE:
+            if config.REALLYVERBOSE:
                 log(f"upload function {payload['artifact_name']} to repository {payload['repositoryName']}")
 
             headers = {"content-type": "application/json", "Authorization": deploy_token}
