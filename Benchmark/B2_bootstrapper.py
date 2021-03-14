@@ -205,7 +205,7 @@ def UploadArtifactsConcurrently(
     log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos} repositories...")
 
     format = "%(asctime)s: %(message)s"
-    logging.basicConfig(format=format, level=log,
+    logging.basicConfig(format=format, level=logging.info,
                         datefmt="%H:%M:%S")
 
     ts = time()
