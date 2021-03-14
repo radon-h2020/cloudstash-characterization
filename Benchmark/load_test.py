@@ -7,7 +7,6 @@ from config import GlobalConfig
 from benchmark import Benchmark
 from artillery_report_parser import parse_artillery_output
 from B2_bootstrapper import run_bootstrap, WriteToFile
-import os 
 
 # get config singleton
 config = GlobalConfig.get()

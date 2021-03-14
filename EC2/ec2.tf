@@ -1,7 +1,7 @@
 resource "aws_instance" "orchestrator" {
   key_name      = aws_key_pair.ubuntu.key_name
   ami           = "ami-01996625fff6b8fcc"
-  instance_type = "m5.metal"
+  instance_type = "t3.2xlarge" # for bursting: m5.metal v. 96 cores (5$/h)
 
   tags = {
     Name = "cloudstash_characterization_orchestrator"
