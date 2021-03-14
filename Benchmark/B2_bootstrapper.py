@@ -51,7 +51,7 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
             thread = GetArtifactIdWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -87,7 +87,7 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
             thread = GetArtifactNamesWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -123,7 +123,7 @@ class UploadWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
             thread = UploadWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -146,7 +146,7 @@ def UploadSingleArtifact(
 ) -> str:
 
     if config.VERBOSE:
-        logging.info("Processing %s: starting", index_i)
+        log("Processing %s: starting", index_i)
 
     artifact_size = random.randint(config.ARTIFACT_SIZE_LOWER, config.ARTIFACT_SIZE_UPPER)
 
@@ -174,7 +174,7 @@ def UploadSingleArtifact(
             # artifact_data = benchmark_obj["artifact_raw_data"]
             artifact_data = benchmark_obj["payload"]
             if config.VERBOSE:
-                logging.info("Processing %s: finishing", index_i)
+                log("Processing %s: finishing", index_i)
             datas.append(artifact_data)
 
 def UploadArtifactsConcurrently(
@@ -205,7 +205,7 @@ def UploadArtifactsConcurrently(
     log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos} repositories...")
 
     format = "%(asctime)s: %(message)s"
-    logging.basicConfig(format=format, level=logging.INFO,
+    logging.basicConfig(format=format, level=log,
                         datefmt="%H:%M:%S")
 
     ts = time()
@@ -220,13 +220,13 @@ def UploadArtifactsConcurrently(
     # Put the tasks into the queue as a tuple
     for i in range(0, num_artifacts):
         if config.REALLYVERBOSE:
-            logging.info('Queueing {}'.format(i))
+            log('Queueing {}'.format(i))
         queue.put((i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        logging.info('Took %s', time() - ts)
+        log('Took %s', time() - ts)
 
     ####
     # Single threaded due to only single API call
@@ -257,13 +257,13 @@ def UploadArtifactsConcurrently(
     # Put the tasks into the queue as a tuple
     for i in range(0, len(repo_ids)-1):
         if config.REALLYVERBOSE:
-            logging.info('Queueing {}'.format(i))
+            log('Queueing {}'.format(i))
         queue.put((benchmark, repo_ids[i], artifact_names_per_id))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        logging.info('Get Artifact Names Took %s', time() - ts)
+        log('Get Artifact Names Took %s', time() - ts)
 
     #
     # Get Ids for artifact names
@@ -287,13 +287,13 @@ def UploadArtifactsConcurrently(
     for repo_id in artifact_names_per_id:
         for a_name in artifact_names_per_id[repo_id]:
             if config.REALLYVERBOSE:
-                logging.info('Queueing {}'.format(a_name))
+                log('Queueing {}'.format(a_name))
             queue.put((benchmark, repo_id, a_name, artifact_ids))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        logging.info('Took %s', time() - ts)
+        log('Took %s', time() - ts)
 
     ####
     # Single threaded from here on. Optimize later maybe
