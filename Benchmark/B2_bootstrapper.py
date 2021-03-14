@@ -51,7 +51,7 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
             thread = GetArtifactIdWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
