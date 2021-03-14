@@ -87,7 +87,7 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
             thread = GetArtifactNamesWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -123,7 +123,7 @@ class UploadWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(8): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
             thread = UploadWorkerThread(self.queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -495,7 +495,7 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     num_users = 10
     num_repos = 10
     num_processes = multiprocessing.cpu_count()
-    num_upload_threads = multiprocessing.cpu_count() * 2
+    num_upload_threads = 8
     num_artifacts = benchmark.number_of_artefacts
 
     log(f"Running on CPU with {multiprocessing.cpu_count()} cores. Will run bootstrapper with {num_processes} processes which each will have {num_upload_threads} threads")
