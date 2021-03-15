@@ -54,7 +54,7 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # Start threads inside process
 
             thread = GetArtifactIdWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -93,7 +93,7 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # Start threads inside process
 
             thread = GetArtifactNamesWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -132,7 +132,7 @@ class UploadWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # Start threads inside process
             thread = UploadWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -271,7 +271,6 @@ def UploadArtifactsConcurrently(
         worker.daemon = True
         worker.start()
 
-   
     # Put the tasks into the queue as a tuple
     for i in range(0, len(repo_ids)-1):
         if config.REALLYVERBOSE:
@@ -379,7 +378,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
                 f"Status code {response.status_code} endpoint url {endpoint_url}",
                 error=True,
             )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}"
@@ -400,7 +399,7 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: Joi
                 f"Repository creation failed for repository{repository_id}, waiting {config.RETRY_DELAY}s before trying again.",
                 error=True
             )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
 
 def GetRepositorieIds(benchmark: Benchmark):
     log(f"Listing repositores to obtain respository ids")
@@ -432,7 +431,7 @@ def GetRepositorieIds(benchmark: Benchmark):
                 f"Status code {response.status_code} endpoint url {endpoint_url}",
                 error=True,
             )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
 
 def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: Benchmark):
     header = "repo_id, user\n"
@@ -457,7 +456,7 @@ def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: 
                     f"Repository creation failed for repository{i}, waiting {config.RETRY_DELAY}s before trying again.",
                     error=True,
                 )
-                time.sleep(config.RETRY_DELAY)
+                sleep(config.RETRY_DELAY)
 
     return csv.strip() # remove last empty line
 
@@ -496,13 +495,13 @@ def CreateUsers(num: int, benchmark: Benchmark):
                         f"User login failed  when logging in user {uname}, waiting {config.RETRY_DELAY}s before trying again.",
                         error=True,
                     )
-                    time.sleep(config.RETRY_DELAY)
+                    sleep(config.RETRY_DELAY)
             else:
                 log(
                     f"User creation failed  when creating user {uname}, waiting {config.RETRY_DELAY}s before trying again.",
                     error=True,
                 )
-                time.sleep(config.RETRY_DELAY)
+                sleep(config.RETRY_DELAY)
 
     return (csv.strip(), session_tokens, deploy_tokens)
 
@@ -577,7 +576,5 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     )
     if writeCSVToLog:
         log(f"Datas Count: {datas.splitlines().__len__()-1}")
-        # log(f"Example data: {datas.splitlines()[1]}")
 
     return(True, None)
-

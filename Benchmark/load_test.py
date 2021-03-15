@@ -20,7 +20,7 @@ def run_load_test(benchmark: Benchmark):
     # Deploy cloudstash
     ###
 
-    shouldDeploy = True
+    shouldDeploy = False
 
     log("----- Create Infrastructure")
 
