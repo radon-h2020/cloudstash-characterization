@@ -55,7 +55,6 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
     def run(self):
         threads = []
         for _ in range(4): # Start threads inside process
-
             thread = GetArtifactIdWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -319,18 +318,17 @@ def UploadArtifactsConcurrently(
     if config.VERBOSE:
         log(f'Get Artifact Ids Took: {time() - ts}')
 
-    i = 0
     artifact_ids = []
     while not return_queue.qsize() == 0:
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
-        i = i + 1
-        if i % 1000 == 0:
-            if config.VERBOSE:
-                log(f"Processing queue item {i}")
-                log(f"Qsize: {return_queue.qsize()}")
-    return_queue.join()
+
+        if config.VERBOSE:
+            log(f"Processing queue item {i}")
+            log(f"Qsize: {return_queue.qsize()}")
+
+    # return_queue.join()
 
     ####
     # Single threaded from here on
