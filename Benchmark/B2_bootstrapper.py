@@ -387,7 +387,7 @@ def UploadArtifactsConcurrently(
 
         # Stop data ouput at 1000 due to Artillery STRING_TOO_LONG error..
         if i == 1000: 
-            return
+            break
 
     combined_string = seperator.join(data_strings)
     csv_artifacts = f"{csv_artifacts}{combined_string}"
