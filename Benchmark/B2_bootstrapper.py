@@ -271,7 +271,7 @@ def UploadArtifactsConcurrently(
         worker.start()
 
     # Put the tasks into the queue as a tuple
-    for i in range(0, len(repo_ids)-1):
+    for i in range(0, len(repo_ids)):
         if config.REALLYVERBOSE:
             log('Queueing {}'.format(i))
         queue.put((benchmark, repo_ids[i]))
@@ -320,12 +320,13 @@ def UploadArtifactsConcurrently(
 
     artifact_ids = []
     while not return_queue.qsize() == 0:
+        if config.VERBOSE:
+            if return_queue.qsize() % (num_artifacts / 10) == 0:
+                log(f"Qsize: {return_queue.qsize()}")
+        
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
-
-        if config.VERBOSE:
-            log(f"Qsize: {return_queue.qsize()}")
 
     # return_queue.join()
 
