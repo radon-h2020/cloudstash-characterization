@@ -319,11 +319,19 @@ def UploadArtifactsConcurrently(
     if config.VERBOSE:
         log(f'Took: {time() - ts}')
 
+    i = 0
     artifact_ids = []
     while not return_queue.qsize() == 0:
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
+
+        i = i + 1
+        if i % 1000:
+            if config.VERBOSE:
+                log(f"Processing queue item {i}")
+
+
     return_queue.join()
 
     ####
