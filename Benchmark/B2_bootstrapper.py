@@ -361,6 +361,8 @@ def UploadArtifactsConcurrently(
     log(f"Artifact ID CSV generated...")
 
     i = 0
+    data_strings = []
+    seperator = ''
     log(f"Start artifact data CSV generation...")
     for data in generated_artifacts:
         artifact_name = data["artifact_name"]
@@ -374,13 +376,17 @@ def UploadArtifactsConcurrently(
         applicationToken = data["applicationToken"]
         file = data["file"]
 
-        data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}"
-        csv_artifacts = f"{csv_artifacts}{data_as_line}\n"
+        data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}\n"
+        data_strings.append(data_as_line)
+        # csv_artifacts = f"{csv_artifacts}{data_as_line}"
 
         if config.VERBOSE:
             if i % 100 == 0:
                 log(f"Progress ({i}/{generated_artifacts.__len__()})")
             i = i + 1
+
+    combined_string = seperator.join(data_strings)
+    csv_artifacts = f"{csv_artifacts}{combined_string}"
 
     log(f"Artifact data CSV generated...")
 
