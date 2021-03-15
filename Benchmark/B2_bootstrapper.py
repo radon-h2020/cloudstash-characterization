@@ -91,7 +91,6 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
     def run(self):
         threads = []
         for _ in range(4): # Start threads inside process
-
             thread = GetArtifactNamesWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -247,10 +246,11 @@ def UploadArtifactsConcurrently(
     ####
     repo_ids = GetRepositorieIds(benchmark) 
 
+    print(f"Repo ID list length: {repo_ids.__len__()}")
+
     ####
     # Multi threaded from here on
     ####
-
     #
     # Obtain Artifact Names
     #
@@ -285,6 +285,10 @@ def UploadArtifactsConcurrently(
         artifact_names_per_id[repo_id].append(a_name)
         return_queue.task_done()
     return_queue.join()
+
+    log(f"Obtained the following number of artifacts per repository...")
+    for repo_id in artifact_names_per_id:
+        log(f"Repo Id: {repo_id} num: {artifact_names_per_id[repo_id].__len__()}")
 
     #
     # Get Ids for artifact names
@@ -360,6 +364,8 @@ def UploadArtifactsConcurrently(
         data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}"
         csv_artifacts = f"{csv_artifacts}{data_as_line}\n"
 
+    log(f"Finished creating CSV...")
+
     return (csv_artifact_ids, csv_repo_ids, csv_artifacts, csv_artifact_json)
 
 def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, return_queue: JoinableQueue):
@@ -381,6 +387,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
                 error=True,
             )
             sleep(config.RETRY_DELAY)
+    return None
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}"
