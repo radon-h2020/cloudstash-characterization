@@ -286,8 +286,6 @@ def UploadArtifactsConcurrently(
         return_queue.task_done()
     return_queue.join()
 
-    log(f"Artifact_names_per_id {artifact_names_per_id}")
-
     #
     # Get Ids for artifact names
     #
@@ -325,7 +323,7 @@ def UploadArtifactsConcurrently(
         if config.VERBOSE:
             if return_queue.qsize() % (num_artifacts / 10) == 0:
                 log(f"Qsize: {return_queue.qsize()}")
-        
+
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
@@ -379,11 +377,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
             return
         else:
             log(
-                f"Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
-                error=True,
-            )
-            log(
-                f"Status code {response.status_code} endpoint url {endpoint_url}",
+                f"Status code {response.status_code}: Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
                 error=True,
             )
             sleep(config.RETRY_DELAY)
@@ -400,7 +394,7 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: Joi
         if response.status_code == 200:
             json_objs = response.json()
             for obj in json_objs['artifacts']:
-                return_queue.put((repository_id, (f"{obj['group_name']}/{obj['artifact_name']}")))
+                return_queue.put((repository_id, f"{obj['group_name']}/{obj['artifact_name']}"))
             return
         else:
             log(
