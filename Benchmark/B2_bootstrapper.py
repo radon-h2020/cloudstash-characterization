@@ -317,7 +317,7 @@ def UploadArtifactsConcurrently(
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        log(f'Took: {time() - ts}')
+        log(f'Get Artifact Ids Took: {time() - ts}')
 
     i = 0
     artifact_ids = []
@@ -325,14 +325,11 @@ def UploadArtifactsConcurrently(
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
-
         i = i + 1
         if i % 1000 == 0:
             if config.VERBOSE:
                 log(f"Processing queue item {i}")
                 log(f"Qsize: {return_queue.qsize()}")
-
-
     return_queue.join()
 
     ####
