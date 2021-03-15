@@ -59,9 +59,7 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
             threads.append(thread)
-
-        for t in threads:
-            t.start()
+            thread.start()
 
         for t in threads:
             t.join()
@@ -288,6 +286,8 @@ def UploadArtifactsConcurrently(
         return_queue.task_done()
     return_queue.join()
 
+    log(f"Artifact_names_per_id {artifact_names_per_id}")
+
     #
     # Get Ids for artifact names
     #
@@ -313,6 +313,8 @@ def UploadArtifactsConcurrently(
                 log('Queueing {}'.format(a_name))
             queue.put((benchmark, repo_id, a_name))
 
+    log(f"Artifact Id Queue size: {queue.qsize()}")
+
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
@@ -329,6 +331,8 @@ def UploadArtifactsConcurrently(
         return_queue.task_done()
 
     # return_queue.join()
+
+    log(f"Starting to create CSV files based on collected/generated data..")
 
     ####
     # Single threaded from here on
@@ -372,7 +376,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
             json_obj = response.json()
             for obj in json_obj: # should only be 1. Ok to return
                 return_queue.put(obj['artifactId'])
-                return
+            return
         else:
             log(
                 f"Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
