@@ -1,3 +1,4 @@
+from multiprocessing.queues import JoinableQueue
 import random
 from utils import log
 from config import GlobalConfig
@@ -30,35 +31,38 @@ random.seed(config.RANDOM_SEED)
 
 class GetArtifactIdWorkerThread(Thread):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         Thread.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         while True:
             # Get the work from the queue and expand the tuple
-            benchmark, repo_id, a_name, artifact_ids = self.queue.get()
+            benchmark, repo_id, a_name = self.queue.get()
             try:
-                GetArtifactId(benchmark, repo_id, a_name, artifact_ids)
+                GetArtifactId(benchmark, repo_id, a_name, self.return_queue)
             finally:
                 self.queue.task_done()
 
 class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         multiprocessing.Process.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         threads = []
         for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
-            thread = GetArtifactIdWorkerThread(self.queue)
+            thread = GetArtifactIdWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
-            thread.start()
-
             threads.append(thread)
+
+        for t in threads:
+            t.start()
 
         for t in threads:
             t.join()
@@ -66,35 +70,38 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
 class GetArtifactNamesWorkerThread(Thread):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         Thread.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         while True:
             # Get the work from the queue and expand the tuple
-            benchmark, repository_id, artifact_names_per_id = self.queue.get()
+            benchmark, repository_id = self.queue.get()
             try:
-                GetArtifactNames(benchmark, repository_id, artifact_names_per_id)
+                GetArtifactNames(benchmark, repository_id, self.return_queue)
             finally:
                 self.queue.task_done()
 
 class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         multiprocessing.Process.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         threads = []
         for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
 
-            thread = GetArtifactNamesWorkerThread(self.queue)
+            thread = GetArtifactNamesWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
-            thread.start()
-
             threads.append(thread)
+
+        for t in threads:
+            t.start()
 
         for t in threads:
             t.join()
@@ -102,34 +109,37 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
 class UploadWorkerThread(Thread):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         Thread.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         while True:
             # Get the work from the queue and expand the tuple
-            index_i, num_users, num_repos, benchmark, deploy_tokens, datas = self.queue.get()
+            index_i, num_users, num_repos, benchmark, deploy_tokens = self.queue.get()
             try:
-                UploadSingleArtifact(index_i, num_users, num_repos, benchmark, deploy_tokens, datas)
+                UploadSingleArtifact(index_i, num_users, num_repos, benchmark, deploy_tokens, self.return_queue)
             finally:
                 self.queue.task_done()
 
 class UploadWorkerProcess(multiprocessing.Process):
 
-    def __init__(self, queue):
+    def __init__(self, queue, return_queue):
         multiprocessing.Process.__init__(self)
         self.queue = queue
+        self.return_queue = return_queue
 
     def run(self):
         threads = []
         for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
-            thread = UploadWorkerThread(self.queue)
+            thread = UploadWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
-            thread.start()
-
             threads.append(thread)
+
+        for t in threads:
+            t.start()
 
         for t in threads:
             t.join()
@@ -142,7 +152,7 @@ def UploadSingleArtifact(
     num_repos: int,
     benchmark: Benchmark,
     deploy_tokens: list,
-    datas: list
+    return_queue: JoinableQueue
 ) -> str:
 
     if config.VERBOSE:
@@ -175,7 +185,7 @@ def UploadSingleArtifact(
             artifact_data = benchmark_obj["payload"]
             if config.VERBOSE:
                 log(f"Processing {index_i}: finishing")
-            datas.append(artifact_data)
+            return_queue.put(artifact_data)
 
 def UploadArtifactsConcurrently(
     num_processes: int, 
@@ -185,9 +195,6 @@ def UploadArtifactsConcurrently(
     num_artifacts: int,
     benchmark: Benchmark
 ):
-    # THREADSAFE COLLECTIONS
-    generated_artifacts = []
-
     # CSV HEADERS START
     csv_header_ids = f"artifact_id\n"
     csv_artifact_ids = csv_header_ids
@@ -211,9 +218,10 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = multiprocessing.JoinableQueue()
+    return_queue = multiprocessing.JoinableQueue()
     # Create worker threads
     for _ in range(num_processes):
-        worker = UploadWorkerProcess(queue)
+        worker = UploadWorkerProcess(queue, return_queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
         worker.start()
@@ -221,17 +229,26 @@ def UploadArtifactsConcurrently(
     for i in range(0, num_artifacts):
         if config.REALLYVERBOSE:
             log('Queueing {}'.format(i))
-        queue.put((i, num_users, num_repos, benchmark, deploy_tokens, generated_artifacts))
+        queue.put((i, num_users, num_repos, benchmark, deploy_tokens))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        log('Took %s', time() - ts)
+        log(f'Upload Artifacts Took: {time() - ts}')
+
+    generated_artifacts = []
+    while not return_queue.qsize() == 0:
+        item = return_queue.get()
+        generated_artifacts.append(item)
+        return_queue.task_done()
+    return_queue.join()
+
+    print(f"Generated artifact list length: {generated_artifacts.__len__()}")
 
     ####
     # Single threaded due to only single API call
     ####
-    repo_ids = GetRepositorieIds(benchmark)
+    repo_ids = GetRepositorieIds(benchmark) 
 
     ####
     # Multi threaded from here on
@@ -246,24 +263,32 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = multiprocessing.JoinableQueue()
+    return_queue = multiprocessing.JoinableQueue()
     # Create worker threads
     for _ in range(num_processes):
-        worker = GetArtifactNamesWorkerProcess(queue)
+        worker = GetArtifactNamesWorkerProcess(queue, return_queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
         worker.start()
 
-    artifact_names_per_id = data = {k: [] for k in repo_ids}
+   
     # Put the tasks into the queue as a tuple
     for i in range(0, len(repo_ids)-1):
         if config.REALLYVERBOSE:
             log('Queueing {}'.format(i))
-        queue.put((benchmark, repo_ids[i], artifact_names_per_id))
+        queue.put((benchmark, repo_ids[i]))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        log('Get Artifact Names Took %s', time() - ts)
+        log(f'Get Artifact Names Took {time() - ts}')
+
+    artifact_names_per_id = data = {k: [] for k in repo_ids}
+    while not return_queue.qsize() == 0:
+        (repo_id, a_name) = return_queue.get()
+        artifact_names_per_id[repo_id].append(a_name)
+        return_queue.task_done()
+    return_queue.join()
 
     #
     # Get Ids for artifact names
@@ -275,28 +300,35 @@ def UploadArtifactsConcurrently(
     ts = time()
     # Create a queue to communicate with the worker threads
     queue = multiprocessing.JoinableQueue()
+    return_queue = multiprocessing.JoinableQueue()
     # Create worker threads
     for _ in range(num_processes):
-        worker = GetArtifactIdWorkerProcess(queue)
+        worker = GetArtifactIdWorkerProcess(queue, return_queue)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
         worker.daemon = True
         worker.start()
 
-    artifact_ids = []
     # Put the tasks into the queue as a tuple
     for repo_id in artifact_names_per_id:
         for a_name in artifact_names_per_id[repo_id]:
             if config.REALLYVERBOSE:
                 log('Queueing {}'.format(a_name))
-            queue.put((benchmark, repo_id, a_name, artifact_ids))
+            queue.put((benchmark, repo_id, a_name))
 
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        log('Took %s', time() - ts)
+        log(f'Took: {time() - ts}')
+
+    artifact_ids = []
+    while not return_queue.qsize() == 0:
+        id = return_queue.get()
+        artifact_ids.append(id)
+        return_queue.task_done()
+    return_queue.join()
 
     ####
-    # Single threaded from here on. Optimize later maybe
+    # Single threaded from here on
     ####
 
     for id in repo_ids:
@@ -325,7 +357,7 @@ def UploadArtifactsConcurrently(
 
     return (csv_artifact_ids, csv_repo_ids, csv_artifacts, csv_artifact_json)
 
-def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, artifact_ids: list):
+def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}/artifact/{artifact_name}"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
@@ -336,7 +368,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
         if response.status_code == 200:
             json_obj = response.json()
             for obj in json_obj: # should only be 1. Ok to return
-                artifact_ids.append(obj['artifactId'])
+                return_queue.put(obj['artifactId'])
                 return
         else:
             log(
@@ -349,8 +381,7 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
             )
             time.sleep(config.RETRY_DELAY)
 
-def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: dict):
-    a_name_list = artifact_names[repository_id]
+def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}"
     headers = {"content-type": "application/json"}
     for _ in range(0, config.RETRIES):
@@ -362,7 +393,7 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, artifact_names: d
         if response.status_code == 200:
             json_objs = response.json()
             for obj in json_objs['artifacts']:
-                a_name_list.append(f"{obj['group_name']}/{obj['artifact_name']}")
+                return_queue.put((repository_id, (f"{obj['group_name']}/{obj['artifact_name']}")))
             return
         else:
             log(
@@ -495,7 +526,7 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     num_users = 10
     num_repos = 10
     num_processes = multiprocessing.cpu_count()
-    num_upload_threads = 8
+    num_upload_threads = 4
     num_artifacts = benchmark.number_of_artefacts
 
     log(f"Running on CPU with {multiprocessing.cpu_count()} cores. Will run bootstrapper with {num_processes} processes which each will have {num_upload_threads} threads")

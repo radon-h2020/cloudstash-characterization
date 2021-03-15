@@ -31,12 +31,12 @@ def run_load_test(benchmark: Benchmark):
         # set gateway_url in benchmark object
         benchmark.gateway_url = gateway_url
     else: 
-        benchmark.gateway_url = "https://prw38bw0yg.execute-api.eu-west-1.amazonaws.com/67cb4a47"
+        benchmark.gateway_url = "https://2sxivumsse.execute-api.eu-west-1.amazonaws.com/d1bd1f4a"
         deployed = True
 
 
     # make sure everything is ready before starting benchmark
-    if not shouldDeploy:
+    if shouldDeploy:
         log(f"Waiting {config.ORCHESTRATION_DELAY} seconds before starting benchmark")
         sleep(config.ORCHESTRATION_DELAY)
 
