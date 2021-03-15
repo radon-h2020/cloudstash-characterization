@@ -376,18 +376,16 @@ def UploadArtifactsConcurrently(
         applicationToken = data["applicationToken"]
         file = data["file"]
 
-        data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}\n"
-        data_strings.append(data_as_line)
-        # csv_artifacts = f"{csv_artifacts}{data_as_line}"
-
-        if config.VERBOSE:
-            if i % 100 == 0:
-                log(f"Progress ({i}/{generated_artifacts.__len__()})")
-            i = i + 1
-
         # Stop data ouput at 1000 due to Artillery STRING_TOO_LONG error..
-        if i == 1000: 
-            break
+        if i < 1000: 
+            data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}\n"
+            data_strings.append(data_as_line)
+            # csv_artifacts = f"{csv_artifacts}{data_as_line}"
+
+            if config.VERBOSE:
+                if i % 100 == 0:
+                    log(f"Progress ({i}/{generated_artifacts.__len__()})")
+                i = i + 1
 
     combined_string = seperator.join(data_strings)
     csv_artifacts = f"{csv_artifacts}{combined_string}"
