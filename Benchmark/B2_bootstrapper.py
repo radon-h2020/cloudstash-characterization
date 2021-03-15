@@ -325,7 +325,6 @@ def UploadArtifactsConcurrently(
         return_queue.task_done()
 
         if config.VERBOSE:
-            log(f"Processing queue item {i}")
             log(f"Qsize: {return_queue.qsize()}")
 
     # return_queue.join()
