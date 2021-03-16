@@ -54,15 +54,12 @@ class GetArtifactIdWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
-
+        for _ in range(4): # Start threads inside process
             thread = GetArtifactIdWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
             threads.append(thread)
-
-        for t in threads:
-            t.start()
+            thread.start()
 
         for t in threads:
             t.join()
@@ -93,8 +90,7 @@ class GetArtifactNamesWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
-
+        for _ in range(4): # Start threads inside process
             thread = GetArtifactNamesWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -132,7 +128,7 @@ class UploadWorkerProcess(multiprocessing.Process):
 
     def run(self):
         threads = []
-        for _ in range(4): # range(multiprocessing.cpu_count() * 2): # Start threads inside process
+        for _ in range(4): # Start threads inside process
             thread = UploadWorkerThread(self.queue, self.return_queue)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             thread.daemon = True
@@ -199,9 +195,6 @@ def UploadArtifactsConcurrently(
     csv_header_ids = f"artifact_id\n"
     csv_artifact_ids = csv_header_ids
 
-    csv_header_json = f"json\n"
-    csv_artifact_json = csv_header_json
-
     csv_header_repo_ids = f"repo_id\n"
     csv_repo_ids = csv_header_repo_ids
 
@@ -209,7 +202,7 @@ def UploadArtifactsConcurrently(
     csv_artifacts = csv_header_ids
     # CSV HEADERS END
 
-    log(f"Creating {num_artifacts} artifacts split equally amongst {num_repos} repositories...")
+    log(f"Creating {num_artifacts} artifacts distributed equally amongst {num_repos} repositories...")
 
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO,
@@ -236,12 +229,16 @@ def UploadArtifactsConcurrently(
     if config.VERBOSE:
         log(f'Upload Artifacts Took: {time() - ts}')
 
+    if config.VERBOSE:
+        log(f'Start extracting results from queue...')
     generated_artifacts = []
     while not return_queue.qsize() == 0:
         item = return_queue.get()
         generated_artifacts.append(item)
         return_queue.task_done()
     return_queue.join()
+    if config.VERBOSE:
+        log(f'Finished extracting results from queue...')
 
     print(f"Generated artifact list length: {generated_artifacts.__len__()}")
 
@@ -250,8 +247,10 @@ def UploadArtifactsConcurrently(
     ####
     repo_ids = GetRepositorieIds(benchmark) 
 
+    print(f"Repo ID list length: {repo_ids.__len__()}")
+
     ####
-    # Multi threaded from here on
+    # Multi threaded
     ####
 
     #
@@ -271,9 +270,8 @@ def UploadArtifactsConcurrently(
         worker.daemon = True
         worker.start()
 
-   
     # Put the tasks into the queue as a tuple
-    for i in range(0, len(repo_ids)-1):
+    for i in range(0, len(repo_ids)):
         if config.REALLYVERBOSE:
             log('Queueing {}'.format(i))
         queue.put((benchmark, repo_ids[i]))
@@ -283,17 +281,24 @@ def UploadArtifactsConcurrently(
     if config.VERBOSE:
         log(f'Get Artifact Names Took {time() - ts}')
 
+    if config.VERBOSE:
+        log(f'Start extracting results from queue...')
     artifact_names_per_id = data = {k: [] for k in repo_ids}
     while not return_queue.qsize() == 0:
         (repo_id, a_name) = return_queue.get()
         artifact_names_per_id[repo_id].append(a_name)
         return_queue.task_done()
     return_queue.join()
+    if config.VERBOSE:
+        log(f'Finished extracting results from queue...')
+
+    log(f"Obtained the following number of artifacts per repository...")
+    for repo_id in artifact_names_per_id:
+        log(f"Repo Id: {repo_id} num: {artifact_names_per_id[repo_id].__len__()}")
 
     #
     # Get Ids for artifact names
     #
-
     if config.VERBOSE:
         log(f"Listing artifacts to obtain artifact ids")
 
@@ -315,31 +320,50 @@ def UploadArtifactsConcurrently(
                 log('Queueing {}'.format(a_name))
             queue.put((benchmark, repo_id, a_name))
 
+    log(f"Artifact Id Queue size: {queue.qsize()}")
+
     # Causes the main thread to wait for the queue to finish processing all the tasks
     queue.join()
     if config.VERBOSE:
-        log(f'Took: {time() - ts}')
+        log(f'Get Artifact Ids Took: {time() - ts}')
 
+    log(f"Artifact Id Queue size: {queue.qsize()}")
+
+    if config.VERBOSE:
+        log(f'Start extracting results from queue...')
     artifact_ids = []
     while not return_queue.qsize() == 0:
+        if config.VERBOSE:
+            if return_queue.qsize() % (num_artifacts / 10) == 0:
+                log(f"Qsize: {return_queue.qsize()}")
         id = return_queue.get()
         artifact_ids.append(id)
         return_queue.task_done()
     return_queue.join()
+    if config.VERBOSE:
+        log(f'Finished extracting results from queue...')
+
+    log(f"Artifact Id Return Queue size: {return_queue.qsize()}")
+
 
     ####
-    # Single threaded from here on
+    # Single threaded
     ####
+
+    log(f"Starting to create CSV files based on collected/generated data..")
 
     for id in repo_ids:
         csv_repo_ids = f"{csv_repo_ids}{id}\n"
+    log(f"Repo ID CSV generated...")
 
     for id in artifact_ids:
         csv_artifact_ids = f"{csv_artifact_ids}{id}\n"
+    log(f"Artifact ID CSV generated...")
 
-    for data in generated_artifacts:
-        csv_artifact_json = f"{csv_artifact_json}{data}\n"
-
+    i = 0
+    data_strings = []
+    seperator = ''
+    log(f"Start artifact data CSV generation...")
     for data in generated_artifacts:
         artifact_name = data["artifact_name"]
         version = data["version"]
@@ -352,10 +376,26 @@ def UploadArtifactsConcurrently(
         applicationToken = data["applicationToken"]
         file = data["file"]
 
-        data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}"
-        csv_artifacts = f"{csv_artifacts}{data_as_line}\n"
+        data_as_line = f"{artifact_name},{version},{description},{repositoryName},{organization},{provider},{runtime},{handler},{applicationToken},{file}\n"
+        data_strings.append(data_as_line)
+        # csv_artifacts = f"{csv_artifacts}{data_as_line}"
 
-    return (csv_artifact_ids, csv_repo_ids, csv_artifacts, csv_artifact_json)
+        if config.VERBOSE:
+            if i % 100 == 0:
+                log(f"Progress ({i}/{generated_artifacts.__len__()})")
+            i = i + 1
+
+        # Stop data ouput at 1000 due to Artillery STRING_TOO_LONG error..
+        if i == 1000: 
+            break
+
+    combined_string = seperator.join(data_strings)
+    csv_artifacts = f"{csv_artifacts}{combined_string}"
+
+    log(f"Artifact data CSV generated...")
+
+    log(f"Finished creating CSV...")
+    return (csv_artifact_ids, csv_repo_ids, csv_artifacts)
 
 def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}/artifact/{artifact_name}"
@@ -369,17 +409,14 @@ def GetArtifactId(benchmark: Benchmark, repository_id: int, artifact_name: str, 
             json_obj = response.json()
             for obj in json_obj: # should only be 1. Ok to return
                 return_queue.put(obj['artifactId'])
-                return
+            return None
         else:
             log(
-                f"Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
+                f"Status code {response.status_code}: Failed to get artifact id for repo {repository_id} artifact {artifact_name}, waiting {config.RETRY_DELAY}s before trying again.",
                 error=True,
             )
-            log(
-                f"Status code {response.status_code} endpoint url {endpoint_url}",
-                error=True,
-            )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
+    return None
 
 def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: JoinableQueue):
     endpoint_url = f"{benchmark.gateway_url}/repository/{repository_id}"
@@ -393,14 +430,14 @@ def GetArtifactNames(benchmark: Benchmark, repository_id: int, return_queue: Joi
         if response.status_code == 200:
             json_objs = response.json()
             for obj in json_objs['artifacts']:
-                return_queue.put((repository_id, (f"{obj['group_name']}/{obj['artifact_name']}")))
+                return_queue.put((repository_id, f"{obj['group_name']}/{obj['artifact_name']}"))
             return
         else:
             log(
                 f"Repository creation failed for repository{repository_id}, waiting {config.RETRY_DELAY}s before trying again.",
                 error=True
             )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
 
 def GetRepositorieIds(benchmark: Benchmark):
     log(f"Listing repositores to obtain respository ids")
@@ -432,7 +469,7 @@ def GetRepositorieIds(benchmark: Benchmark):
                 f"Status code {response.status_code} endpoint url {endpoint_url}",
                 error=True,
             )
-            time.sleep(config.RETRY_DELAY)
+            sleep(config.RETRY_DELAY)
 
 def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: Benchmark):
     header = "repo_id, user\n"
@@ -457,7 +494,7 @@ def CreateRepositories(num_repos: int, num_users: int, tokens: list, benchmark: 
                     f"Repository creation failed for repository{i}, waiting {config.RETRY_DELAY}s before trying again.",
                     error=True,
                 )
-                time.sleep(config.RETRY_DELAY)
+                sleep(config.RETRY_DELAY)
 
     return csv.strip() # remove last empty line
 
@@ -496,13 +533,13 @@ def CreateUsers(num: int, benchmark: Benchmark):
                         f"User login failed  when logging in user {uname}, waiting {config.RETRY_DELAY}s before trying again.",
                         error=True,
                     )
-                    time.sleep(config.RETRY_DELAY)
+                    sleep(config.RETRY_DELAY)
             else:
                 log(
                     f"User creation failed  when creating user {uname}, waiting {config.RETRY_DELAY}s before trying again.",
                     error=True,
                 )
-                time.sleep(config.RETRY_DELAY)
+                sleep(config.RETRY_DELAY)
 
     return (csv.strip(), session_tokens, deploy_tokens)
 
@@ -551,10 +588,8 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     WriteToFile(repo_csv, f"{base_path}/{repo_filename}")
     if writeCSVToLog: log(repo_csv)
 
-    # Replace Repository Names with Repository Ids
-
     # Apply preconditions (Multithreaded B1)
-    (ids, repo_ids, datas, json_csv) = UploadArtifactsConcurrently(
+    (ids, repo_ids, datas) = UploadArtifactsConcurrently(
         num_processes,
         num_users,
         deploy_tokens,
@@ -577,7 +612,5 @@ def run_bootstrap(benchmark: Benchmark) -> Tuple[bool, dict]:
     )
     if writeCSVToLog:
         log(f"Datas Count: {datas.splitlines().__len__()-1}")
-        # log(f"Example data: {datas.splitlines()[1]}")
 
     return(True, None)
-
